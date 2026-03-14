@@ -5,6 +5,7 @@ from parser import (
     ConnectionValidator,
     DroneCountValidator,
     HubParser,
+    HubValidator,
     Parser,
     ParserManager,
     StartOrEndHubValidator,
@@ -31,7 +32,7 @@ from parser import (
             "hub: junction 1 0 [color=yellow max_drones=2]",
             does_not_raise(),
             {
-                "parsed_and_validated_data": HubParser,
+                "parsed_and_validated_data": HubValidator,
                 "parser": "hub",
             },
         ),
@@ -53,8 +54,12 @@ from parser import (
         ),
     ],
 )
-def test_open_file(line: str, expectation, expected_return: dict) -> None:
+def test_choose_right_parser(line: str, expectation, expected_return: dict) -> None:
     with expectation:
         parser = ParserManager()
         res = parser.process(line)
-        assert res == expected_return
+        assert res["parser"] == expected_return["parser"]
+        assert isinstance(
+            res["parsed_and_validated_data"],
+            expected_return["parsed_and_validated_data"],
+        )

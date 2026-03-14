@@ -260,6 +260,3 @@ class ParserManager:
             except ValueError:
                 pass
         raise ValueError(f"Unknown data: {data}")
-
-
-##class DroneCountValidator
