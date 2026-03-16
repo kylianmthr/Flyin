@@ -32,10 +32,23 @@ class Parser:
     def process(self) -> list[BaseModel]:
         res = []
         parser = ParserManager()
-        splited_content = self.content.split("\n")
-        for line in splited_content:
-            if not line.startswith("#") and len(line):
-                res.append(parser.process(line))
+        blocks = self.content.split("\n\n")
+        i = 0
+        for block in blocks:
+            block_content = []
+            lines = block.split("\n")
+            for line in lines:
+                if not line.startswith("#") and len(line):
+                    block_content.append(parser.process(line))
+            i += 1
+            res += block_content
+            if i == 1:
+                if block_content[0]["parser"] != "drone_count":
+                    raise ValueError(
+                        "Number of drone must be at the first line of the file"
+                    )
+        if i != 3:
+            raise ValueError("Unexpected number of block")
         return res
 
 
@@ -61,10 +74,12 @@ class DroneCountParser(SpecificParser):
 class StartHubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
-            r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$", re.M
+            r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            re.M,
         )
         self._extra_regex = re.compile(
-            r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$", re.M
+            r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            re.M,
         )
 
     def process(self, line: str) -> dict:
@@ -89,10 +104,12 @@ class StartHubParser(SpecificParser):
 class HubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
-            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$", re.M
+            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            re.M,
         )
         self._extra_regex = re.compile(
-            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$", re.M
+            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            re.M,
         )
 
     def process(self, line: str) -> dict:
@@ -118,10 +135,12 @@ class HubParser(SpecificParser):
 class EndHubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
-            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$", re.M
+            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            re.M,
         )
         self._extra_regex = re.compile(
-            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$", re.M
+            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            re.M,
         )
 
     def process(self, line: str) -> dict:
@@ -145,7 +164,9 @@ class EndHubParser(SpecificParser):
 
 class ConnectionParser(SpecificParser):
     def __init__(self) -> None:
-        self._regex = re.compile(r"^connection:\s+(?P<connection>\b\w+-\b\w+)", re.M)
+        self._regex = re.compile(
+            r"^connection:\s+(?P<connection>\b\w+-\b\w+)", re.M
+        )
 
     def process(self, line: str) -> dict:
         match = self._regex.match(line)
@@ -193,6 +214,16 @@ class HubValidator(BaseModel):
                 raise ValueError("Error: max_drones must be a positive number")
         return self
 
+    @model_validator(mode="after")
+    def already_exist(
+        self: "HubValidator", info: ValidationInfo
+    ) -> "HubValidator":
+        if info.context:
+            if self.id not in info.context["hubs"]:
+                return self
+            raise ValueError(f"Error: {self.id} hub already exist.")
+        raise ValueError("Error: You must include context")
+
 
 class ConnectionValidator(BaseModel):
     connection: str = Field(min_length=3)
@@ -205,9 +236,22 @@ class ConnectionValidator(BaseModel):
             raise ValueError("Error: Connections must include separator")
         if info.context:
             if self.connection not in info.context["connections"]:
-                inverted_connection = "-".join(self.connection.split("-")[::-1])
+                inverted_connection = "-".join(
+                    self.connection.split("-")[::-1]
+                )
                 if inverted_connection not in info.context["connections"]:
-                    return self
+                    if self.connection.split("-")[0] in info.context["hubs"]:
+                        if (
+                            self.connection.split("-")[1]
+                            in info.context["hubs"]
+                        ):
+                            return self
+                        raise ValueError(
+                            f"Error: Trying to connect undeclared hub ({self.connection.split('-')[1]})"
+                        )
+                    raise ValueError(
+                        f"Error: Trying to connect undeclared hub ({self.connection.split('-')[0]})"
+                    )
                 raise ValueError("Error: Duplicated connection")
             raise ValueError("Error: Duplicated connection")
         raise ValueError("Error: You must include context")
@@ -230,12 +274,16 @@ class ParserManager:
                 "validator": StartOrEndHubValidator,
             },
             "hub": {"parser": HubParser(), "validator": HubValidator},
-            "end_hub": {"parser": EndHubParser(), "validator": StartOrEndHubValidator},
+            "end_hub": {
+                "parser": EndHubParser(),
+                "validator": StartOrEndHubValidator,
+            },
             "connection": {
                 "parser": ConnectionParser(),
                 "validator": ConnectionValidator,
             },
         }
+        self.hubs = []
         self.connections = []
 
     class ProcessedDict(TypedDict):
@@ -250,13 +298,29 @@ class ParserManager:
             try:
                 res = self._parsers[parser]["parser"].process(data)
                 if parser == "connection":
-                    validate_res = self._parsers[parser]["validator"].model_validate(
-                        res, context={"connections": self.connections}
+                    validate_res = self._parsers[parser][
+                        "validator"
+                    ].model_validate(
+                        res,
+                        context={
+                            "connections": self.connections,
+                            "hubs": self.hubs,
+                        },
                     )
                     self.connections.append(res["connection"])
+                elif parser == "hub":
+                    validate_res = self._parsers[parser][
+                        "validator"
+                    ].model_validate(res, context={"hubs": self.hubs})
+                    self.hubs.append(res["id"])
                 else:
+                    if parser == "start_hub" or parser == "end_hub":
+                        self.hubs.append(res["id"])
                     validate_res = self._parsers[parser]["validator"](**res)
-                return {"parsed_and_validated_data": validate_res, "parser": parser}
+                return {
+                    "parsed_and_validated_data": validate_res,
+                    "parser": parser,
+                }
             except ValidationError as e:
                 raise ValueError(e)
             except ValueError:

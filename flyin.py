@@ -1,4 +1,10 @@
-from parser import DroneCountParser, HubParser, Parser, ParserManager, StartHubParser
+from parser import (
+    DroneCountParser,
+    HubParser,
+    Parser,
+    ParserManager,
+    StartHubParser,
+)
 import sys
 
 
