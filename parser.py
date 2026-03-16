@@ -10,6 +10,11 @@ from pydantic import (
 import re
 
 
+class ProcessedDict(TypedDict):
+    parsed_and_validated_data: BaseModel
+    parser: str
+
+
 class Parser:
     def __init__(self) -> None:
         self.content = ""
@@ -29,7 +34,7 @@ class Parser:
         with open(filename, "r") as f:
             self.content = f.read()
 
-    def process(self) -> list[BaseModel]:
+    def process(self) -> list[ProcessedDict]:
         res = []
         parser = ParserManager()
         blocks = self.content.split("\n\n")
@@ -74,11 +79,17 @@ class DroneCountParser(SpecificParser):
 class StartHubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
-            r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            (
+                r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)"
+                r"(?P<extra>.*)$"
+            ),
             re.M,
         )
         self._extra_regex = re.compile(
-            r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            (
+                r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)"
+                r"(?P<extra>.*)$"
+            ),
             re.M,
         )
 
@@ -257,10 +268,12 @@ class ConnectionValidator(BaseModel):
                         ):
                             return self
                         raise ValueError(
-                            f"Error: Trying to connect undeclared hub ({self.connection.split('-')[1]})"
+                            "Error: Trying to connect undeclared hub"
+                            f"({self.connection.split('-')[1]})"
                         )
                     raise ValueError(
-                        f"Error: Trying to connect undeclared hub ({self.connection.split('-')[0]})"
+                        "Error: Trying to connect undeclared hub"
+                        f"({self.connection.split('-')[0]})"
                     )
                 raise ValueError("Error: Duplicated connection")
             raise ValueError("Error: Duplicated connection")
@@ -293,17 +306,13 @@ class ParserManager:
                 "validator": ConnectionValidator,
             },
         }
-        self.hubs = []
-        self.connections = []
-
-    class ProcessedDict(TypedDict):
-        parsed_and_validated_data: BaseModel
-        parser: str
+        self.hubs: list[str] = []
+        self.connections: list[str] = []
 
     def process(
         self,
         data: str,
-    ) -> ProcessedDict | dict[str, Exception]:
+    ) -> ProcessedDict:
         for parser in self._parsers:
             try:
                 res = self._parsers[parser]["parser"].process(data)

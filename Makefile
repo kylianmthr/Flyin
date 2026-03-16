@@ -17,12 +17,12 @@ clean:
 	find . -iname ".mypy_cache" -type d -exec rm -rf "{}" +
 
 lint:
-	uv run flake8 .
-	uv run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	uv run flake8 . --exclude .venv
+	uv run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs --exclude .venv
 
 lint-strict:
-	uv run flake8 .
-	uv run mypy .
+	uv run flake8 . --exclude .venv
+	uv run mypy . --exclude .venv
 
 #TODO: A SUPPRIMER
 test:

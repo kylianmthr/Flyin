@@ -1,3 +1,4 @@
+from typing import Any, ContextManager
 from pydantic import ValidationError
 import pytest
 from contextlib import nullcontext as does_not_raise
@@ -18,7 +19,9 @@ from parser import (
     ],
 )
 def test_validate_drone_count(
-    parsed_dict: dict, expectation, expected_validation: DroneCountValidator
+    parsed_dict: dict,
+    expectation: ContextManager[Any],
+    expected_validation: DroneCountValidator,
 ) -> None:
     with expectation:
         res = DroneCountValidator(**parsed_dict)
@@ -80,7 +83,7 @@ def test_validate_drone_count(
     ],
 )
 def test_validate_start_hub(
-    parsed_dict: dict, hubs_list: list[str], expectation
+    parsed_dict: dict, hubs_list: list[str], expectation: ContextManager[Any]
 ) -> None:
     with expectation:
         StartOrEndHubValidator.model_validate(
@@ -141,7 +144,7 @@ def test_validate_start_hub(
     ],
 )
 def test_validate_hub(
-    parsed_dict: dict, hubs_list: list[str], expectation
+    parsed_dict: dict, hubs_list: list[str], expectation: ContextManager[Any]
 ) -> None:
     with expectation:
         HubValidator.model_validate(parsed_dict, context={"hubs": hubs_list})
@@ -186,7 +189,7 @@ def test_validate_connection(
     parsed_dict: dict,
     connections_list: list,
     hubs_list: list[str],
-    expectation,
+    expectation: ContextManager[Any],
 ) -> None:
     with expectation:
         ConnectionValidator.model_validate(

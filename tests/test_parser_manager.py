@@ -1,12 +1,11 @@
+from typing import Any, ContextManager
 import pytest
 from contextlib import nullcontext as does_not_raise
 
 from parser import (
     ConnectionValidator,
     DroneCountValidator,
-    HubParser,
     HubValidator,
-    Parser,
     ParserManager,
     StartOrEndHubValidator,
 )
@@ -58,7 +57,7 @@ from parser import (
     ],
 )
 def test_choose_right_parser(
-    line: str, expectation, expected_return: dict
+    line: str, expectation: ContextManager[Any], expected_return: dict
 ) -> None:
     with expectation:
         parser = ParserManager()
