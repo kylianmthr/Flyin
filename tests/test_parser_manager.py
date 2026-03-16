@@ -18,7 +18,10 @@ from parser import (
         (
             "nb_drones: 3",
             does_not_raise(),
-            {"parsed_and_validated_data": DroneCountValidator, "parser": "drone_count"},
+            {
+                "parsed_and_validated_data": DroneCountValidator,
+                "parser": "drone_count",
+            },
         ),
         (
             "start_hub: start 0 0 [color=green]",
@@ -45,7 +48,7 @@ from parser import (
             },
         ),
         (
-            "connection: start-junction",
+            "connection: truc-jsp",
             does_not_raise(),
             {
                 "parsed_and_validated_data": ConnectionValidator,
@@ -54,9 +57,12 @@ from parser import (
         ),
     ],
 )
-def test_choose_right_parser(line: str, expectation, expected_return: dict) -> None:
+def test_choose_right_parser(
+    line: str, expectation, expected_return: dict
+) -> None:
     with expectation:
         parser = ParserManager()
+        parser.hubs = ["truc", "jsp"]
         res = parser.process(line)
         assert res["parser"] == expected_return["parser"]
         assert isinstance(

@@ -26,99 +26,170 @@ def test_validate_drone_count(
 
 
 @pytest.mark.parametrize(
-    "parsed_dict, expectation",
+    "parsed_dict, hubs_list, expectation",
     [
         (
-            {"id": "start", "x": 0, "y": 0, "color": "green", "max_drones": -1},
+            {
+                "id": "start",
+                "x": 0,
+                "y": 0,
+                "color": "green",
+                "max_drones": -1,
+            },
+            [],
             does_not_raise(),
         ),
         (
-            {"id": "start-hub", "x": 0, "y": 0, "color": "green", "max_drones": -1},
+            {
+                "id": "start-hub",
+                "x": 0,
+                "y": 0,
+                "color": "green",
+                "max_drones": -1,
+            },
+            [],
             pytest.raises(ValidationError),
         ),
         (
             {"id": "start", "x": 0, "y": 0, "color": "green", "max_drones": 0},
+            [],
             pytest.raises(ValidationError),
         ),
         (
-            {"id": "start", "x": -1, "y": 0, "color": "green", "max_drones": -1},
+            {
+                "id": "start",
+                "x": -1,
+                "y": 0,
+                "color": "green",
+                "max_drones": -1,
+            },
+            [],
+            pytest.raises(ValidationError),
+        ),
+        (
+            {
+                "id": "start",
+                "x": 0,
+                "y": 0,
+                "color": "green",
+                "max_drones": -1,
+            },
+            ["start"],
             pytest.raises(ValidationError),
         ),
     ],
 )
-def test_validate_start_hub(parsed_dict: dict, expectation) -> None:
+def test_validate_start_hub(
+    parsed_dict: dict, hubs_list: list[str], expectation
+) -> None:
     with expectation:
-        StartOrEndHubValidator(**parsed_dict)
+        StartOrEndHubValidator.model_validate(
+            parsed_dict, context={"hubs": hubs_list}
+        )
 
 
 @pytest.mark.parametrize(
-    "parsed_dict, expectation",
+    "parsed_dict, hubs_list, expectation",
     [
         (
             {"id": "test", "x": 0, "y": 0, "color": "green", "max_drones": -1},
+            [],
             pytest.raises(ValidationError),
         ),
         (
-            {"id": "start-hub", "x": 0, "y": 0, "color": "green", "max_drones": 2},
+            {
+                "id": "start-hub",
+                "x": 0,
+                "y": 0,
+                "color": "green",
+                "max_drones": 2,
+            },
+            [],
             pytest.raises(ValidationError),
         ),
         (
             {"id": "start", "x": 0, "y": 0, "color": "green", "max_drones": 2},
+            [],
             does_not_raise(),
         ),
         (
-            {"id": "start", "x": -1, "y": 0, "color": "green", "max_drones": 2},
+            {
+                "id": "start",
+                "x": -1,
+                "y": 0,
+                "color": "green",
+                "max_drones": 2,
+            },
+            [],
             pytest.raises(ValidationError),
         ),
         (
             {"id": "start", "x": 0, "y": 0, "max_drones": 2},
+            [],
             does_not_raise(),
         ),
         (
             {"id": "start", "x": 0, "y": 0},
+            [],
             does_not_raise(),
+        ),
+        (
+            {"id": "start", "x": 0, "y": 0, "color": "green", "max_drones": 2},
+            ["start"],
+            pytest.raises(ValidationError),
         ),
     ],
 )
-def test_validate_hub(parsed_dict: dict, expectation) -> None:
+def test_validate_hub(
+    parsed_dict: dict, hubs_list: list[str], expectation
+) -> None:
     with expectation:
-        HubValidator(**parsed_dict)
+        HubValidator.model_validate(parsed_dict, context={"hubs": hubs_list})
 
 
 @pytest.mark.parametrize(
-    "parsed_dict, connections_list, expectation",
+    "parsed_dict, connections_list, hubs_list, expectation",
     [
         (
             {"connection": "test-test"},
             [],
+            ["test", "test"],
             does_not_raise(),
         ),
         (
             {"connection": "test"},
             [],
+            [],
             pytest.raises(ValidationError),
         ),
         (
             {"connection": "test1-test2"},
             ["test1-test2"],
+            ["test1", "test2"],
             pytest.raises(ValidationError),
         ),
         (
             {"connection": "test1-test2"},
             ["test2-test1"],
+            ["test1", "test2"],
             pytest.raises(ValidationError),
         ),
         (
             {"connection": "test2-test1"},
             ["test1-test2"],
+            ["test1", "test2"],
             pytest.raises(ValidationError),
         ),
     ],
 )
 def test_validate_connection(
-    parsed_dict: dict, connections_list: list, expectation
+    parsed_dict: dict,
+    connections_list: list,
+    hubs_list: list[str],
+    expectation,
 ) -> None:
     with expectation:
         ConnectionValidator.model_validate(
-            parsed_dict, context={"connections": connections_list}
+            parsed_dict,
+            context={"connections": connections_list, "hubs": hubs_list},
         )
