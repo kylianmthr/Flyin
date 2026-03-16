@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Optional, TypedDict
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     ValidationError,
     ValidationInfo,
@@ -128,7 +130,7 @@ class HubParser(SpecificParser):
         if not match:
             raise ValueError("Error: Line malformed.")
         obj = match.groupdict()
-        obj.update({"color": None, "max_drones": None})
+        obj.update({"color": None, "max_drones": None, "zone": "normal"})
         obj["x"] = int(obj["x"])
         obj["y"] = int(obj["y"])
         if not len(obj["extra"]):
@@ -215,12 +217,22 @@ class StartOrEndHubValidator(BaseModel):
         raise ValueError("Error: You must include context")
 
 
+class ZoneEnum(Enum):
+    NORMAL = "normal"
+    PRIORITY = "priority"
+    RESTRICTED = "restricted"
+    BLOCKED = "blocked"
+
+
 class HubValidator(BaseModel):
     id: str = Field(min_length=1)
     x: int = Field(ge=0, le=40)
     y: int = Field(ge=0, le=40)
     color: Optional[str] = Field(default=None)
     max_drones: Optional[int] = Field(default=None)
+    zone: ZoneEnum = Field(default=ZoneEnum.NORMAL)
+
+    model_config = ConfigDict(use_enum_values=True)
 
     @model_validator(mode="after")
     def id_check(self: "HubValidator") -> "HubValidator":
