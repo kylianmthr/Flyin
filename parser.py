@@ -193,6 +193,16 @@ class StartOrEndHubValidator(BaseModel):
             raise ValueError("Error: id can't contain separator")
         return self
 
+    @model_validator(mode="after")
+    def already_exist(
+        self: "StartOrEndHubValidator", info: ValidationInfo
+    ) -> "StartOrEndHubValidator":
+        if info.context:
+            if self.id not in info.context["hubs"]:
+                return self
+            raise ValueError(f"Error: {self.id} hub already exist.")
+        raise ValueError("Error: You must include context")
+
 
 class HubValidator(BaseModel):
     id: str = Field(min_length=1)
@@ -308,14 +318,16 @@ class ParserManager:
                         },
                     )
                     self.connections.append(res["connection"])
-                elif parser == "hub":
+                elif (
+                    parser == "hub"
+                    or parser == "start_hub"
+                    or parser == "end_hub"
+                ):
                     validate_res = self._parsers[parser][
                         "validator"
                     ].model_validate(res, context={"hubs": self.hubs})
                     self.hubs.append(res["id"])
                 else:
-                    if parser == "start_hub" or parser == "end_hub":
-                        self.hubs.append(res["id"])
                     validate_res = self._parsers[parser]["validator"](**res)
                 return {
                     "parsed_and_validated_data": validate_res,
