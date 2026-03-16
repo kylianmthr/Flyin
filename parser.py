@@ -6,16 +6,15 @@ from pydantic import (
     ValidationError,
     ValidationInfo,
     model_validator,
-    validator,
 )
 import re
 
 
 class Parser:
     def __init__(self) -> None:
-        self.parsers = {...}
+        self.content = ""
 
-    def open(self, filename: str) -> str:
+    def open(self, filename: str) -> None:
         """Open the map file that will be parsed
 
         Args:
@@ -28,13 +27,16 @@ class Parser:
         """
         print(filename)
         with open(filename, "r") as f:
-            return f.read()
+            self.content = f.read()
 
-    def process(self, content: str):
-        splited_content = content.split("\n")
+    def process(self) -> list[BaseModel]:
+        res = []
+        parser = ParserManager()
+        splited_content = self.content.split("\n")
         for line in splited_content:
-            # Find the right parser and call it
-            pass
+            if not line.startswith("#") and len(line):
+                res.append(parser.process(line))
+        return res
 
 
 class SpecificParser(ABC):

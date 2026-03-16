@@ -5,8 +5,8 @@ import sys
 def main(argv: list[str]) -> None:
     parser = Parser()
     try:
-        parser = ParserManager()
-        print(parser.process("hub: junction-test 1 0 [color=yellow max_drones=2]"))
+        parser.open(argv[1])
+        print(parser.process())
     except (FileNotFoundError, PermissionError) as e:
         print("Error:", e)
 
