@@ -103,5 +103,5 @@ class Graph:
         for node in self.nodes:
             try:
                 node.remove_connection(target)
-            except:
+            except Exception:
                 pass
