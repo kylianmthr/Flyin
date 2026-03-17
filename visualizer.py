@@ -9,65 +9,56 @@ class Visualizer:
         self.multiply = 1
         self.connections = connections
         self.screen = pygame.display.set_mode((800, 600))
-        self.screen.fill("white")
         self.clock = pygame.time.Clock()
         self.running = True
 
     def _draw_map(self, multiplier):
-        self.radius = 3 * multiplier
-        self.prev_y = []
-        offset = 10 * multiplier
-        self.node_width = (len(self.nodes)) * offset + (
-            len(self.nodes) - 1
-        ) * self.radius
-        self.node_height = sum(
-            [node.coords[1] * offset for node in self.nodes]
-        )
-        for node in self.nodes:
-            if node.coords[1] not in self.prev_y:
-                self.node_height = +self.radius
-                self.prev_y.append(node.coords[1])
-        i = 0
-        offset_x = (800 - self.node_width) // 1.5
-        offset_y = (400 - self.node_height) // 2
+        self.screen.fill("white")
+        radius = 12 * multiplier
+        offset = 40 * multiplier
+        step = radius + offset
+        min_x = min([node.coords[0] for node in self.nodes])
+        max_x = max([node.coords[0] for node in self.nodes])
+        min_y = min([node.coords[1] for node in self.nodes])
+        max_y = max([node.coords[1] for node in self.nodes])
+        print(min_x, max_x)
+        self.node_width = (max_x - min_x) // 2
+        self.node_height = (max_y - min_y) // 2
+        offset_x = 400 - self.node_width * step
+        offset_y = 300 - self.node_height * step
         for link in self.connections:
             pygame.draw.line(
                 self.screen,
                 "black",
                 (
-                    offset_x
-                    + link.nodes[0].coords[0] * (offset + self.radius),
-                    offset_y
-                    + link.nodes[0].coords[1] * (offset + self.radius),
+                    offset_x + link.nodes[0].coords[0] * (offset + radius),
+                    offset_y + link.nodes[0].coords[1] * (offset + radius),
                 ),
                 (
-                    offset_x
-                    + link.nodes[1].coords[0] * (offset + self.radius),
-                    offset_y
-                    + link.nodes[1].coords[1] * (offset + self.radius),
+                    offset_x + link.nodes[1].coords[0] * (offset + radius),
+                    offset_y + link.nodes[1].coords[1] * (offset + radius),
                 ),
+                width=multiplier * 2,
             )
         for node in self.nodes:
             pygame.draw.circle(
                 self.screen,
                 "black",
                 (
-                    offset_x + node.coords[0] * (offset + self.radius),
-                    offset_y + node.coords[1] * (offset + self.radius),
+                    offset_x + node.coords[0] * (offset + radius),
+                    offset_y + node.coords[1] * (offset + radius),
                 ),
-                self.radius * 1.2,
+                radius * 1.2,
             )
             pygame.draw.circle(
                 self.screen,
                 node.color if node.color else "white",
                 (
-                    offset_x + node.coords[0] * (offset + self.radius),
-                    offset_y + node.coords[1] * (offset + self.radius),
+                    offset_x + node.coords[0] * (offset + radius),
+                    offset_y + node.coords[1] * (offset + radius),
                 ),
-                self.radius,
+                radius,
             )
-            print(i)
-            i += 1
 
         pygame.display.flip()
 
@@ -77,11 +68,9 @@ class Visualizer:
                 self.running = False
             if event.type == pygame.MOUSEWHEEL:
                 if event.y > 0:
-                    self.screen.fill("white")
                     self.multiply += 1
                     self._draw_map(multiplier=self.multiply)
-                if event.y < 0:
-                    self.screen.fill("white")
+                if event.y < 0 and self.multiply != 1:
                     self.multiply -= 1
                     self._draw_map(multiplier=self.multiply)
 
