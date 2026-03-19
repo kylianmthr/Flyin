@@ -3,7 +3,6 @@ from enum import Enum
 from typing import Optional, TypedDict
 from pydantic import (
     BaseModel,
-    ConfigDict,
     Field,
     ValidationError,
     ValidationInfo,
@@ -54,7 +53,8 @@ class Parser:
             if i == 1:
                 if res[0]["parser"] != "drone_count":
                     raise ValueError(
-                        f"[{file_line}] - Number of drone must be at the first line of the file"
+                        f"[{file_line}] - Number of drone must be at the first"
+                        " line of the file"
                     )
             file_line += 1
         return res
@@ -118,11 +118,17 @@ class StartHubParser(SpecificParser):
 class HubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
-            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
+            (
+                r"^hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+"
+                r"(?P<y>\-?\d+)(?P<extra>.*)$"
+            ),
             re.M,
         )
         self._extra_regex = re.compile(
-            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
+            (
+                r"^hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+"
+                r"(?P<y>\-?\d+)(?P<extra>.*)$"
+            ),
             re.M,
         )
 
@@ -142,6 +148,8 @@ class HubParser(SpecificParser):
             obj[m.group("key")] = m.group("value")
             if m.group("key") == "max_drones":
                 obj["max_drones"] = int(obj["max_drones"])
+            if m.group("key") == "zone":
+                obj["zone"] = ZoneEnum(obj["zone"])
         del obj["extra"]
         return obj
 
@@ -149,11 +157,17 @@ class HubParser(SpecificParser):
 class EndHubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
-            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
+            (
+                r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)"
+                r"\s+(?P<y>\-?\d+)(?P<extra>.*)$"
+            ),
             re.M,
         )
         self._extra_regex = re.compile(
-            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
+            (
+                r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)"
+                r"\s+(?P<y>\-?\d+)(?P<extra>.*)$"
+            ),
             re.M,
         )
 
@@ -245,8 +259,6 @@ class HubValidator(BaseModel):
     color: Optional[str] = Field(default=None)
     max_drones: Optional[int] = Field(default=None)
     zone: ZoneEnum = Field(default=ZoneEnum.NORMAL)
-
-    model_config = ConfigDict(use_enum_values=True)
 
     @model_validator(mode="after")
     def id_check(self: "HubValidator") -> "HubValidator":

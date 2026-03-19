@@ -1,5 +1,9 @@
 NAME=flyin.py
-MAP=maps/easy/01_linear_path.txt
+#MAP=maps/easy/01_linear_path.txt
+MAP=maps/challenger/01_the_impossible_dream.txt
+#MAP=maps/easy/03_basic_capacity.txt
+#MAP=maps/hard/02_capacity_hell.txt
+#MAP=maps/challenger/01_the_impossible_dream.txt
 
 all: ${NAME}
 
