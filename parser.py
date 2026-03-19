@@ -40,7 +40,7 @@ class Parser:
         res = []
         parser = ParserManager()
         lines = self.content.split("\n")
-        file_line = 1
+        file_line = 0
         i = 0
         for line in lines:
             if not line.startswith("#") and len(line):
@@ -83,14 +83,14 @@ class StartHubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
             (
-                r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)"
+                r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)"
                 r"(?P<extra>.*)$"
             ),
             re.M,
         )
         self._extra_regex = re.compile(
             (
-                r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)"
+                r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)"
                 r"(?P<extra>.*)$"
             ),
             re.M,
@@ -118,11 +118,11 @@ class StartHubParser(SpecificParser):
 class HubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
-            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
             re.M,
         )
         self._extra_regex = re.compile(
-            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
             re.M,
         )
 
@@ -149,11 +149,11 @@ class HubParser(SpecificParser):
 class EndHubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
-            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
             re.M,
         )
         self._extra_regex = re.compile(
-            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
             re.M,
         )
 
@@ -207,8 +207,8 @@ class DroneCountValidator(BaseModel):
 
 class StartOrEndHubValidator(BaseModel):
     id: str = Field(min_length=1)
-    x: int = Field(ge=0, le=40)
-    y: int = Field(ge=0, le=40)
+    x: int
+    y: int
     color: Optional[str] = Field(default=None)
     max_drones: int = Field(ge=-1, le=-1)
     start: bool = Field(default=False)
@@ -240,8 +240,8 @@ class ZoneEnum(Enum):
 
 class HubValidator(BaseModel):
     id: str = Field(min_length=1)
-    x: int = Field(ge=0, le=40)
-    y: int = Field(ge=0, le=40)
+    x: int
+    y: int
     color: Optional[str] = Field(default=None)
     max_drones: Optional[int] = Field(default=None)
     zone: ZoneEnum = Field(default=ZoneEnum.NORMAL)

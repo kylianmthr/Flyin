@@ -1,3 +1,4 @@
+from typing_extensions import TypeForm
 from parser import (
     ConnectionValidator,
     HubValidator,

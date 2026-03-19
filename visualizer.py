@@ -1,4 +1,5 @@
 import pygame
+import random
 from graph import Link, Node
 
 
@@ -11,19 +12,22 @@ class Visualizer:
         self.screen = pygame.display.set_mode((800, 600))
         self.clock = pygame.time.Clock()
         self.running = True
+        self.mouse_offset_x = 0
+        self.mouse_offset_y = 0
+        self.old_x = 0
+        self.old_y = 0
 
     def _draw_map(self, multiplier):
         self.screen.fill("white")
-        radius = 12 * multiplier
-        offset = 40 * multiplier
+        radius = 6 * multiplier
+        offset = 15 * multiplier
         step = radius + offset
         min_x = min([node.coords[0] for node in self.nodes])
         max_x = max([node.coords[0] for node in self.nodes])
         min_y = min([node.coords[1] for node in self.nodes])
         max_y = max([node.coords[1] for node in self.nodes])
-        print(min_x, max_x)
-        self.node_width = (max_x - min_x) // 2
-        self.node_height = (max_y - min_y) // 2
+        self.node_width = (abs(max_x) - abs(min_x)) // 2
+        self.node_height = (abs(max_y) - abs(min_y)) // 2
         offset_x = 400 - self.node_width * step
         offset_y = 300 - self.node_height * step
         for link in self.connections:
@@ -31,34 +35,79 @@ class Visualizer:
                 self.screen,
                 "black",
                 (
-                    offset_x + link.nodes[0].coords[0] * (offset + radius),
-                    offset_y + link.nodes[0].coords[1] * (offset + radius),
+                    offset_x
+                    + link.nodes[0].coords[0] * (offset + radius)
+                    + self.mouse_offset_x,
+                    offset_y
+                    + link.nodes[0].coords[1] * (offset + radius)
+                    + self.mouse_offset_y,
                 ),
                 (
-                    offset_x + link.nodes[1].coords[0] * (offset + radius),
-                    offset_y + link.nodes[1].coords[1] * (offset + radius),
+                    offset_x
+                    + link.nodes[1].coords[0] * (offset + radius)
+                    + self.mouse_offset_x,
+                    offset_y
+                    + link.nodes[1].coords[1] * (offset + radius)
+                    + self.mouse_offset_y,
                 ),
-                width=multiplier * 2,
+                width=multiplier,
             )
         for node in self.nodes:
-            pygame.draw.circle(
-                self.screen,
-                "black",
-                (
-                    offset_x + node.coords[0] * (offset + radius),
-                    offset_y + node.coords[1] * (offset + radius),
-                ),
-                radius * 1.2,
-            )
-            pygame.draw.circle(
-                self.screen,
-                node.color if node.color else "white",
-                (
-                    offset_x + node.coords[0] * (offset + radius),
-                    offset_y + node.coords[1] * (offset + radius),
-                ),
-                radius,
-            )
+            try:
+                pygame.draw.circle(
+                    self.screen,
+                    node.color if node.color else "white",
+                    (
+                        offset_x
+                        + node.coords[0] * (offset + radius)
+                        + self.mouse_offset_x,
+                        offset_y
+                        + node.coords[1] * (offset + radius)
+                        + self.mouse_offset_y,
+                    ),
+                    radius,
+                )
+            except Exception:
+                if node.color == "rainbow":
+                    rainbow_circle = pygame.Surface(
+                        (radius * 2, radius * 2), pygame.SRCALPHA
+                    )
+                    pygame.draw.circle(
+                        rainbow_circle, "green", (radius, radius), radius
+                    )
+                    for r in range(radius, 0, -1):
+                        alpha = int(255 * (r / radius))
+                        color = (255, 0, 0, alpha)
+                        pygame.draw.circle(
+                            rainbow_circle, color, (radius, radius), r
+                        )
+                    self.screen.blit(
+                        rainbow_circle,
+                        (
+                            offset_x
+                            + node.coords[0] * (offset + radius)
+                            - radius
+                            + self.mouse_offset_x,
+                            offset_y
+                            + node.coords[1] * (offset + radius)
+                            - radius
+                            + self.mouse_offset_y,
+                        ),
+                    )
+                else:
+                    pygame.draw.circle(
+                        self.screen,
+                        "white",
+                        (
+                            offset_x
+                            + node.coords[0] * (offset + radius)
+                            + self.mouse_offset_x,
+                            offset_y
+                            + node.coords[1] * (offset + radius)
+                            + self.mouse_offset_y,
+                        ),
+                        radius,
+                    )
 
         pygame.display.flip()
 
@@ -69,10 +118,19 @@ class Visualizer:
             if event.type == pygame.MOUSEWHEEL:
                 if event.y > 0:
                     self.multiply += 1
-                    self._draw_map(multiplier=self.multiply)
+                    self._draw_map(
+                        multiplier=self.multiply,
+                    )
                 if event.y < 0 and self.multiply != 1:
                     self.multiply -= 1
                     self._draw_map(multiplier=self.multiply)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self.old_x = event.pos[0]
+                self.old_y = event.pos[1]
+            if event.type == pygame.MOUSEBUTTONUP:
+                self.mouse_offset_x += event.pos[0] - self.old_x
+                self.mouse_offset_y += event.pos[1] - self.old_y
+                self._draw_map(multiplier=self.multiply)
 
     def run(self) -> None:
         self._draw_map(self.multiply)

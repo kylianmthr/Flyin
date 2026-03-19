@@ -67,7 +67,7 @@ def test_validate_drone_count(
                 "max_drones": -1,
             },
             [],
-            pytest.raises(ValidationError),
+            does_not_raise(),
         ),
         (
             {
@@ -124,7 +124,7 @@ def test_validate_start_hub(
                 "max_drones": 2,
             },
             [],
-            pytest.raises(ValidationError),
+            does_not_raise(),
         ),
         (
             {"id": "start", "x": 0, "y": 0, "max_drones": 2},
