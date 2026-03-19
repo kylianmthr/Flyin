@@ -1,6 +1,6 @@
 import pygame
 import random
-from graph import Link, Node
+from graph import Link, Node, ZoneWeight
 
 
 class Visualizer:
@@ -127,6 +127,29 @@ class Visualizer:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.old_x = event.pos[0]
                 self.old_y = event.pos[1]
+                for node in self.nodes:
+                    radius = 6 * self.multiply
+                    x = node.coords[0]
+                    y = node.coords[1]
+                    offset = 15 * self.multiply
+                    step = radius + offset
+                    offset_x = 400 - self.node_width * step
+                    offset_y = 300 - self.node_height * step
+                    x = (
+                        offset_x
+                        + node.coords[0] * (offset + radius)
+                        + self.mouse_offset_x
+                    )
+                    y = (
+                        offset_y
+                        + node.coords[1] * (offset + radius)
+                        + self.mouse_offset_y
+                    )
+                    if (event.pos[0] - x) ** 2 + (
+                        event.pos[1] - y
+                    ) ** 2 <= radius**2:
+                        print(node.id)
+                        print("Weight:", ZoneWeight[node.zone.value].value)
             if event.type == pygame.MOUSEBUTTONUP:
                 self.mouse_offset_x += event.pos[0] - self.old_x
                 self.mouse_offset_y += event.pos[1] - self.old_y

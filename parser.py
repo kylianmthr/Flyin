@@ -142,6 +142,8 @@ class HubParser(SpecificParser):
             obj[m.group("key")] = m.group("value")
             if m.group("key") == "max_drones":
                 obj["max_drones"] = int(obj["max_drones"])
+            if m.group("key") == "zone":
+                obj["zone"] = ZoneEnum(obj["zone"])
         del obj["extra"]
         return obj
 
@@ -245,8 +247,6 @@ class HubValidator(BaseModel):
     color: Optional[str] = Field(default=None)
     max_drones: Optional[int] = Field(default=None)
     zone: ZoneEnum = Field(default=ZoneEnum.NORMAL)
-
-    model_config = ConfigDict(use_enum_values=True)
 
     @model_validator(mode="after")
     def id_check(self: "HubValidator") -> "HubValidator":
