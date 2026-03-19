@@ -1,6 +1,7 @@
 from enum import Enum
 import itertools
 import heapq
+from typing import List
 from parser import (
     ConnectionValidator,
     HubValidator,
@@ -33,10 +34,10 @@ class Node:
         self.end = end
         self._link: list[Link] = []
 
-    def add_connection(self, link: Link):
+    def add_connection(self, link: Link) -> None:
         self._link.append(link)
 
-    def remove_connection(self, link: Link):
+    def remove_connection(self, link: Link) -> None:
         if self._link:
             self._link.remove(link)
 
@@ -51,7 +52,7 @@ class Graph:
         self,
         hubs_list: list[HubValidator | StartOrEndHubValidator],
         connections: list[ConnectionValidator],
-    ):
+    ) -> None:
         for hub in hubs_list:
             if isinstance(hub, HubValidator):
                 self.nodes.append(
@@ -97,7 +98,7 @@ class Graph:
                 first_node.add_connection(link)
                 second_node.add_connection(link)
 
-    def remove(self, target: "Node"):
+    def remove(self, target: "Node") -> None:
         self.nodes.remove(target)
         for node in self.nodes:
             try:
@@ -116,11 +117,13 @@ class ZoneWeight(Enum):
 
 
 class Solver:
-    def process(self, nodes: list[Node], start_node: Node):
+    def process(
+        self, nodes: list[Node], start_node: Node
+    ) -> dict[Node, float]:
         distances = {node: float("inf") for node in nodes}
         count = itertools.count()
         distances[start_node] = 0
-        queue: list[tuple[int, int, Node]] = [(0, next(count), start_node)]
+        queue: List[tuple[float, int, "Node"]] = [(0, next(count), start_node)]
         heapq.heapify(queue)
         visited = []
         while queue:
@@ -152,7 +155,9 @@ class Solver:
                             )
         return distances
 
-    def backtrack(self, end_node: Node, distances: dict[Node, float]):
+    def backtrack(
+        self, end_node: Node, distances: dict[Node, float]
+    ) -> dict[Node, Node]:
         count = distances[end_node]
         path = {}
         current = end_node

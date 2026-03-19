@@ -1,5 +1,4 @@
 import pygame
-import random
 from graph import Link, Node, ZoneWeight
 
 
@@ -17,7 +16,7 @@ class Visualizer:
         self.old_x = 0
         self.old_y = 0
 
-    def _draw_map(self, multiplier):
+    def _draw_map(self, multiplier: int) -> None:
         self.screen.fill("white")
         radius = 6 * multiplier
         offset = 15 * multiplier
@@ -111,7 +110,7 @@ class Visualizer:
 
         pygame.display.flip()
 
-    def _handle_events(self):
+    def _handle_events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
