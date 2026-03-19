@@ -39,23 +39,24 @@ class Parser:
     def process(self) -> list[ProcessedDict]:
         res = []
         parser = ParserManager()
-        blocks = self.content.split("\n\n")
+        lines = self.content.split("\n")
+        file_line = 0
         i = 0
-        for block in blocks:
-            block_content = []
-            lines = block.split("\n")
-            for line in lines:
-                if not line.startswith("#") and len(line):
-                    block_content.append(parser.process(line))
-            i += 1
-            res += block_content
+        for line in lines:
+            if not line.startswith("#") and len(line):
+                try:
+                    res.append(parser.process(line))
+                except ValidationError as e:
+                    raise ValueError(f"[{file_line}] - {e.errors()[0]['msg']}")
+                except Exception as e:
+                    raise ValueError(f"[{file_line}] - {e}")
+                i += 1
             if i == 1:
-                if block_content[0]["parser"] != "drone_count":
+                if res[0]["parser"] != "drone_count":
                     raise ValueError(
-                        "Number of drone must be at the first line of the file"
+                        f"[{file_line}] - Number of drone must be at the first line of the file"
                     )
-        if i != 3:
-            raise ValueError("Unexpected number of block")
+            file_line += 1
         return res
 
 
@@ -82,14 +83,14 @@ class StartHubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
             (
-                r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)"
+                r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)"
                 r"(?P<extra>.*)$"
             ),
             re.M,
         )
         self._extra_regex = re.compile(
             (
-                r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)"
+                r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)"
                 r"(?P<extra>.*)$"
             ),
             re.M,
@@ -100,7 +101,7 @@ class StartHubParser(SpecificParser):
         if not match:
             raise ValueError("Error: Line malformed.")
         obj = match.groupdict()
-        obj.update({"color": None, "max_drones": -1})
+        obj.update({"color": None, "max_drones": -1, "start": True})
         obj["x"] = int(obj["x"])
         obj["y"] = int(obj["y"])
         if not len(obj["extra"]):
@@ -117,11 +118,11 @@ class StartHubParser(SpecificParser):
 class HubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
-            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
             re.M,
         )
         self._extra_regex = re.compile(
-            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            r"^hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
             re.M,
         )
 
@@ -148,11 +149,11 @@ class HubParser(SpecificParser):
 class EndHubParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
-            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
             re.M,
         )
         self._extra_regex = re.compile(
-            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\d+)\s+(?P<y>\d+)(?P<extra>.*)$",
+            r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)(?P<extra>.*)$",
             re.M,
         )
 
@@ -161,7 +162,7 @@ class EndHubParser(SpecificParser):
         if not match:
             raise ValueError("Error: Line malformed.")
         obj = match.groupdict()
-        obj.update({"color": None, "max_drones": -1})
+        obj.update({"color": None, "max_drones": -1, "end": True})
         obj["x"] = int(obj["x"])
         obj["y"] = int(obj["y"])
         if not len(obj["extra"]):
@@ -178,7 +179,11 @@ class EndHubParser(SpecificParser):
 class ConnectionParser(SpecificParser):
     def __init__(self) -> None:
         self._regex = re.compile(
-            r"^connection:\s+(?P<connection>\b\w+-\b\w+)", re.M
+            r"^connection:\s+(?P<connection>\b\w+-\b\w+)(?P<extra>.*)$", re.M
+        )
+        self._extra_regex = re.compile(
+            r"^connection:\s+(?P<connection>\b\w+-\b\w+)(?P<extra>.*)$",
+            re.M,
         )
 
     def process(self, line: str) -> dict:
@@ -186,6 +191,13 @@ class ConnectionParser(SpecificParser):
         if not match:
             raise ValueError("Error: Line malformed.")
         obj = match.groupdict()
+        obj.update({"max_link_capacity": 1})
+        extra = re.finditer(r"(?P<key>\w+)=(?P<value>\w+)", obj["extra"])
+        for m in extra:
+            obj[m.group("key")] = m.group("value")
+            if m.group("key") == "max_link_capacity":
+                obj[m.group("key")] = int(m.group("value"))
+        del obj["extra"]
         return obj
 
 
@@ -195,10 +207,12 @@ class DroneCountValidator(BaseModel):
 
 class StartOrEndHubValidator(BaseModel):
     id: str = Field(min_length=1)
-    x: int = Field(ge=0, le=40)
-    y: int = Field(ge=0, le=40)
+    x: int
+    y: int
     color: Optional[str] = Field(default=None)
     max_drones: int = Field(ge=-1, le=-1)
+    start: bool = Field(default=False)
+    end: bool = Field(default=False)
 
     @model_validator(mode="after")
     def id_check(self: "StartOrEndHubValidator") -> "StartOrEndHubValidator":
@@ -226,8 +240,8 @@ class ZoneEnum(Enum):
 
 class HubValidator(BaseModel):
     id: str = Field(min_length=1)
-    x: int = Field(ge=0, le=40)
-    y: int = Field(ge=0, le=40)
+    x: int
+    y: int
     color: Optional[str] = Field(default=None)
     max_drones: Optional[int] = Field(default=None)
     zone: ZoneEnum = Field(default=ZoneEnum.NORMAL)
@@ -260,6 +274,7 @@ class HubValidator(BaseModel):
 
 class ConnectionValidator(BaseModel):
     connection: str = Field(min_length=3)
+    max_link_capacity: int = Field(default=1)
 
     @model_validator(mode="after")
     def connection_check(
