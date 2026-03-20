@@ -1,12 +1,19 @@
 import pygame
-from graph import Link, Node, ZoneWeight
+from graph import DronesDict, Link, Node, ZoneWeight
 
 
 class Visualizer:
-    def __init__(self, nodes: list[Node], connections: list[Link]) -> None:
+    def __init__(
+        self,
+        nodes: list[Node],
+        connections: list[Link],
+        drones: list[DronesDict],
+    ) -> None:
         pygame.init()
+        self.drones = drones
         self.nodes = nodes
         self.multiply = 1
+        self.step = 0
         self.connections = connections
         self.screen = pygame.display.set_mode((800, 600))
         self.clock = pygame.time.Clock()
@@ -109,6 +116,53 @@ class Visualizer:
                     )
 
         pygame.display.flip()
+        for drone in self.drones:
+            if len(drone["actions"]) <= self.step:
+                self._draw_drone(
+                    next(
+                        node
+                        for node in self.nodes
+                        if node.id == drone["actions"][-1]
+                    )
+                )
+            elif drone["actions"][self.step] == "in_link":
+                continue
+            elif drone["actions"][self.step] == "wait":
+                temp = drone["actions"]
+                temp.remove("wait")
+                if "in_link" in drone["actions"]:
+                    temp.remove("in_link")
+                self._draw_drone(
+                    next(node for node in self.nodes if node.id == temp[-1])
+                )
+            else:
+                self._draw_drone(
+                    next(
+                        node
+                        for node in self.nodes
+                        if node.id == drone["actions"][self.step]
+                    )
+                )
+
+    def _get_node_coords(self, node: Node):
+        radius = 6 * self.multiply
+        offset = 15 * self.multiply
+        step = radius + offset
+        offset_x = 400 - self.node_width * step
+        offset_y = 300 - self.node_height * step
+        center_x = offset_x + node.coords[0] * step + self.mouse_offset_x
+        center_y = offset_y + node.coords[1] * step + self.mouse_offset_y
+        drone_size = 15 * self.multiply
+        return (center_x - drone_size // 2, center_y - drone_size // 2)
+
+    def _draw_drone(self, node):
+        img = pygame.image.load("drone.png").convert_alpha()
+        img = pygame.transform.scale(
+            img, (15 * self.multiply, 15 * self.multiply)
+        )
+        coords = self._get_node_coords(node)
+        self.screen.blit(img, coords)
+        pygame.display.flip()
 
     def _handle_events(self) -> None:
         for event in pygame.event.get():
@@ -153,6 +207,10 @@ class Visualizer:
                 self.mouse_offset_x += event.pos[0] - self.old_x
                 self.mouse_offset_y += event.pos[1] - self.old_y
                 self._draw_map(multiplier=self.multiply)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RIGHT:
+                    self.step += 1
+                    self._draw_map(multiplier=self.multiply)
 
     def run(self) -> None:
         self._draw_map(self.multiply)

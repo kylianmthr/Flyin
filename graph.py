@@ -1,7 +1,8 @@
 from enum import Enum
 import itertools
 import heapq
-from typing import List
+from os import link
+from typing import List, TypedDict
 from parser import (
     ConnectionValidator,
     HubValidator,
@@ -22,6 +23,7 @@ class Node:
         id: str,
         coords: tuple[int, int],
         color: str | None,
+        capacity: float,
         start: bool = False,
         end: bool = False,
         zone: ZoneEnum = ZoneEnum.NORMAL,
@@ -32,6 +34,10 @@ class Node:
         self.zone = zone
         self.start = start
         self.end = end
+        if capacity == -1:
+            self.capacity = float("inf")
+        else:
+            self.capacity = capacity
         self._link: list[Link] = []
 
     def add_connection(self, link: Link) -> None:
@@ -61,6 +67,9 @@ class Graph:
                         coords=(hub.x, hub.y),
                         color=hub.color,
                         zone=hub.zone,
+                        capacity=hub.max_drones
+                        if hub.max_drones
+                        else float("inf"),
                     )
                 )
             else:
@@ -71,6 +80,9 @@ class Graph:
                         color=hub.color,
                         start=hub.start,
                         end=hub.end,
+                        capacity=hub.max_drones
+                        if hub.max_drones
+                        else float("inf"),
                     )
                 )
         for connection in connections:
@@ -179,3 +191,87 @@ class Solver:
                 if test:
                     break
         return path
+
+
+class DronesDict(TypedDict):
+    actions: list[str]
+    current_node: Node
+    path: dict[Node, Node]
+    waited_turns: int
+
+
+class DroneActions:
+    def __init__(
+        self,
+        nodes: list[Node],
+        connections: list[Link],
+        nbr_drones: int,
+        path: dict[Node, Node],
+        goal: Node,
+    ) -> None:
+        self.nodes_status = {node: 0 for node in nodes}
+        self.link_status = {link: 0 for link in connections}
+        self.drones: list[DronesDict] = [
+            {
+                "actions": [nodes[0].id],
+                "current_node": nodes[0],
+                "path": path,
+                "waited_turns": 0,
+            }
+            for _ in range(nbr_drones)
+        ]
+        self.goal = goal
+
+    def finish(self):
+        for drone in self.drones:
+            if drone["current_node"] != self.goal:
+                return False
+        return True
+
+    def process(self) -> None:
+        while not (self.finish()):
+            for drone in self.drones:
+                if drone["current_node"] == self.goal:
+                    continue
+                next_node = drone["path"][drone["current_node"]]
+                link_to_next_node = next(
+                    (
+                        link
+                        for link in drone["current_node"]._link
+                        if next_node in link.nodes
+                    ),
+                    None,
+                )
+                if not (link_to_next_node):
+                    raise ValueError("Error: Unexpected link")
+                if next_node.capacity <= self.nodes_status[next_node]:
+                    # faire un if pour changer de chemin si le drone attends depuis trop longtemps
+                    drone["waited_turns"] += 1
+                    drone["actions"].append("wait")
+                else:
+                    if next_node.zone.value == "restricted":
+                        if drone["actions"][-1] == "in_link":
+                            self.link_status[link_to_next_node] -= 1
+                            drone["current_node"] = next_node
+                            drone["actions"].append(next_node.id)
+                            drone["waited_turns"] = 0
+                        else:
+                            if (
+                                link_to_next_node.capacity
+                                <= self.link_status[link_to_next_node]
+                            ):
+                                print("la")
+                                # faire un if pour changer de chemin si le drone attends depuis trop longtemps
+                                drone["waited_turns"] += 1
+                                drone["actions"].append("wait")
+                            else:
+                                self.link_status[link_to_next_node] += 1
+                                drone["actions"].append("in_link")
+                                drone["waited_turns"] = 0
+                    elif next_node.zone.value == "blocked":
+                        pass
+                    else:
+                        self.link_status[link_to_next_node] -= 1
+                        drone["current_node"] = next_node
+                        drone["actions"].append(next_node.id)
+                        drone["waited_turns"] = 0

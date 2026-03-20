@@ -1,7 +1,8 @@
 from pydantic import ValidationError
-from graph import Graph, Solver
+from graph import DroneActions, Graph, Solver
 from parser import (
     ConnectionValidator,
+    DroneCountValidator,
     HubValidator,
     Parser,
     StartOrEndHubValidator,
@@ -54,7 +55,27 @@ def main(argv: list[str]) -> None:
                 "Path to first node to last node:",
             )
             print(graph.nodes[-1].end)
-            visualizer = Visualizer(graph.nodes, graph.links)
+            drone_nbr = next(
+                (
+                    validator["parsed_and_validated_data"].nbr
+                    for validator in res
+                    if isinstance(
+                        validator["parsed_and_validated_data"],
+                        DroneCountValidator,
+                    )
+                ),
+                None,
+            )
+            if not (drone_nbr):
+                raise ValueError("jsp j'crois c'est pas possible")
+            drone_actions = DroneActions(
+                graph.nodes, graph.links, drone_nbr, path, goal=graph.nodes[-1]
+            )
+            drone_actions.process()
+            print(drone_actions.drones)
+            visualizer = Visualizer(
+                graph.nodes, graph.links, drone_actions.drones
+            )
             visualizer.run()
         except (ValidationError, ValueError) as e:
             print("Error:", e)
