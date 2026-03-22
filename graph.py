@@ -1,6 +1,7 @@
 from enum import Enum
 import itertools
 import heapq
+from os import link
 from typing import List, TypedDict
 from parser import (
     ConnectionValidator,
@@ -226,6 +227,7 @@ class DroneActions:
             for i in range(nbr_drones)
         ]
         self.goal = goal
+        self.logs: list[list[str]] = []
 
     def finish(self) -> bool:
         for drone in self.drones:
@@ -235,10 +237,15 @@ class DroneActions:
 
     def process(self) -> None:
         while not (self.finish()):
+            step_log = []
+            i = 0
             for drone in self.drones:
+                i += 1
                 if drone["current_node"] == self.goal:
                     continue
                 next_node = drone["path"][drone["current_node"]]
+                color = f"[{next_node.color}]"
+                end = f"[/{next_node.color}]"
                 link_to_next_node = next(
                     (
                         link
@@ -258,6 +265,7 @@ class DroneActions:
                             self.link_status[link_to_next_node] -= 1
                             self.nodes_status[next_node] += 1
                             self.nodes_status[drone["current_node"]] -= 1
+                            step_log.append(f"{color}D{i}-{next_node.id}{end}")
                             drone["current_node"] = next_node
                             drone["actions"].append(next_node.id)
                             drone["waited_turns"] = 0
@@ -270,6 +278,9 @@ class DroneActions:
                                 drone["actions"].append("wait")
                             else:
                                 self.link_status[link_to_next_node] += 1
+                                step_log.append(
+                                    f"{color}D{i}-{drone['current_node'].id}-{next_node.id}{end}"
+                                )
                                 drone["actions"].append("in_link")
                                 drone["waited_turns"] = 0
                     elif next_node.zone.value == "blocked":
@@ -277,6 +288,8 @@ class DroneActions:
                     else:
                         self.nodes_status[next_node] += 1
                         self.nodes_status[drone["current_node"]] -= 1
+                        step_log.append(f"{color}D{i}-{next_node.id}{end}")
                         drone["current_node"] = next_node
                         drone["actions"].append(next_node.id)
                         drone["waited_turns"] = 0
+            self.logs.append(step_log)

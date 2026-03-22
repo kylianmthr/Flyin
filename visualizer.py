@@ -1,5 +1,6 @@
 import pygame
 from graph import DronesDict, Link, Node, ZoneWeight
+from rich.console import Console
 
 
 class Visualizer:
@@ -8,6 +9,7 @@ class Visualizer:
         nodes: list[Node],
         connections: list[Link],
         drones: list[DronesDict],
+        logs: list[list[str]],
     ) -> None:
         pygame.init()
         self.drones = drones
@@ -22,6 +24,8 @@ class Visualizer:
         self.mouse_offset_y = 0
         self.old_x = 0
         self.old_y = 0
+        self.logs = logs
+        self.console = Console(highlight=False)
 
     def _draw_map(self, multiplier: int) -> None:
         self.screen.fill("white")
@@ -116,10 +120,8 @@ class Visualizer:
                     )
 
         pygame.display.flip()
-        c = 0
         for drone in self.drones:
             if len(drone["actions"]) <= self.step:
-                c += 1
                 drone["current_node"] = next(
                     node
                     for node in self.nodes
@@ -129,20 +131,16 @@ class Visualizer:
             elif drone["actions"][self.step] == "in_link":
                 continue
             elif drone["actions"][self.step] == "wait":
-                print("wait")
                 self._draw_drone(drone["current_node"])
             else:
-                c += 1
                 drone["current_node"] = next(
                     node
                     for node in self.nodes
                     if node.id == drone["actions"][self.step]
                 )
                 self._draw_drone(drone["current_node"])
-        if c == len(self.drones):
-            print("MAX")
-        else:
-            print("continue")
+        if self.step - 1 >= 0 and self.step <= len(self.logs):
+            self.console.print(" ".join(self.logs[self.step - 1]))
 
     def _get_node_coords(self, node: Node) -> tuple[int, int]:
         radius = 6 * self.multiply
