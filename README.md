@@ -42,7 +42,7 @@ The project includes a `Makefile` to automate all tasks:
 
 ## Dynamic Cost Dijkstra
 
-[cite_start]The routing engine utilizes a **custom Dijkstra-based algorithm** adapted for multi-agent simulation[cite: 361]. Unlike static pathfinding, our approach uses a **Dynamic Cost System**:
+The routing engine utilizes a **custom Dijkstra-based algorithm** adapted for multi-agent simulation. Unlike static pathfinding, our approach uses a **Dynamic Cost System**:
 
   * **Congestion Awareness:** The weight of a path is not just its physical distance or zone type (normal, restricted, priority).
   * **Dynamic Penalties:** As a path becomes more "crowded," its traversal cost increases. This forces drones to distribute themselves across different disjoint paths to maximize throughput.
