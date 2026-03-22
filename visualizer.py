@@ -84,7 +84,9 @@ class Visualizer:
                     for r in range(radius, 0, -1):
                         alpha = int(255 * (r / radius))
                         color = (255, 0, 0, alpha)
-                        pygame.draw.circle(rainbow_circle, color, (radius, radius), r)
+                        pygame.draw.circle(
+                            rainbow_circle, color, (radius, radius), r
+                        )
                     self.screen.blit(
                         rainbow_circle,
                         (
@@ -119,7 +121,9 @@ class Visualizer:
             if len(drone["actions"]) <= self.step:
                 c += 1
                 drone["current_node"] = next(
-                    node for node in self.nodes if node.id == drone["actions"][-1]
+                    node
+                    for node in self.nodes
+                    if node.id == drone["actions"][-1]
                 )
                 self._draw_drone(drone["current_node"])
             elif drone["actions"][self.step] == "in_link":
@@ -140,7 +144,7 @@ class Visualizer:
         else:
             print("continue")
 
-    def _get_node_coords(self, node: Node):
+    def _get_node_coords(self, node: Node) -> tuple[int, int]:
         radius = 6 * self.multiply
         offset = 15 * self.multiply
         step = radius + offset
@@ -151,9 +155,11 @@ class Visualizer:
         drone_size = 15 * self.multiply
         return (center_x - drone_size // 2, center_y - drone_size // 2)
 
-    def _draw_drone(self, node):
+    def _draw_drone(self, node: Node) -> None:
         img = pygame.image.load("drone.png").convert_alpha()
-        img = pygame.transform.scale(img, (15 * self.multiply, 15 * self.multiply))
+        img = pygame.transform.scale(
+            img, (15 * self.multiply, 15 * self.multiply)
+        )
         coords = self._get_node_coords(node)
         self.screen.blit(img, coords)
         pygame.display.flip()
@@ -192,7 +198,9 @@ class Visualizer:
                         + node.coords[1] * (offset + radius)
                         + self.mouse_offset_y
                     )
-                    if (event.pos[0] - x) ** 2 + (event.pos[1] - y) ** 2 <= radius**2:
+                    if (event.pos[0] - x) ** 2 + (
+                        event.pos[1] - y
+                    ) ** 2 <= radius**2:
                         print(node.id)
                         print("Weight:", ZoneWeight[node.zone.value].value)
             if event.type == pygame.MOUSEBUTTONUP:

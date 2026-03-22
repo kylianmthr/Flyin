@@ -27,7 +27,9 @@ def main(argv: list[str]) -> None:
                         node["parsed_and_validated_data"],
                         StartOrEndHubValidator,
                     )
-                    or isinstance(node["parsed_and_validated_data"], HubValidator)
+                    or isinstance(
+                        node["parsed_and_validated_data"], HubValidator
+                    )
                 ],
                 [
                     node["parsed_and_validated_data"]
@@ -55,7 +57,9 @@ def main(argv: list[str]) -> None:
             costs = {node: 0.0 for node in graph.nodes}
             for i in range(drone_nbr):
                 distances = solver.process(graph.nodes, graph.nodes[0], costs)
-                drone_paths.append(solver.backtrack(graph.nodes[-1], distances, costs))
+                drone_paths.append(
+                    solver.backtrack(graph.nodes[-1], distances, costs)
+                )
                 current = graph.nodes[0]
                 print("current", current)
                 while current != graph.nodes[-1]:
@@ -63,11 +67,17 @@ def main(argv: list[str]) -> None:
                         costs[current] += 2 / current.capacity
                     current = drone_paths[i][current]
             drone_actions = DroneActions(
-                graph.nodes, graph.links, drone_nbr, drone_paths, goal=graph.nodes[-1]
+                graph.nodes,
+                graph.links,
+                drone_nbr,
+                drone_paths,
+                goal=graph.nodes[-1],
             )
             drone_actions.process()
             print(drone_actions.drones)
-            visualizer = Visualizer(graph.nodes, graph.links, drone_actions.drones)
+            visualizer = Visualizer(
+                graph.nodes, graph.links, drone_actions.drones
+            )
             visualizer.run()
             print(
                 len(

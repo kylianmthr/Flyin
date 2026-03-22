@@ -66,7 +66,9 @@ class Graph:
                         coords=(hub.x, hub.y),
                         color=hub.color,
                         zone=hub.zone,
-                        capacity=hub.max_drones if hub.max_drones else float("inf"),
+                        capacity=hub.max_drones
+                        if hub.max_drones
+                        else float("inf"),
                     )
                 )
             else:
@@ -77,7 +79,9 @@ class Graph:
                         color=hub.color,
                         start=hub.start,
                         end=hub.end,
-                        capacity=hub.max_drones if hub.max_drones else float("inf"),
+                        capacity=hub.max_drones
+                        if hub.max_drones
+                        else float("inf"),
                     )
                 )
         for connection in connections:
@@ -98,7 +102,9 @@ class Graph:
                 None,
             )
             if first_node and second_node:
-                link = Link(connection.max_link_capacity, [first_node, second_node])
+                link = Link(
+                    connection.max_link_capacity, [first_node, second_node]
+                )
                 self.links.append(link)
                 first_node.add_connection(link)
                 second_node.add_connection(link)
@@ -158,7 +164,10 @@ class Solver:
         return distances
 
     def backtrack(
-        self, end_node: Node, distances: dict[Node, float], cost: dict[Node, float]
+        self,
+        end_node: Node,
+        distances: dict[Node, float],
+        cost: dict[Node, float],
     ) -> dict[Node, Node]:
         count = distances[end_node]
         path = {}
@@ -171,7 +180,10 @@ class Solver:
                         if (
                             abs(
                                 distances[current]
-                                - (ZoneWeight[current.zone.value].value + cost[current])
+                                - (
+                                    ZoneWeight[current.zone.value].value
+                                    + cost[current]
+                                )
                                 - distances[neighbor]
                             )
                             < 1e-9
@@ -215,7 +227,7 @@ class DroneActions:
         ]
         self.goal = goal
 
-    def finish(self):
+    def finish(self) -> bool:
         for drone in self.drones:
             if drone["current_node"] != self.goal:
                 return False
@@ -238,7 +250,6 @@ class DroneActions:
                 if not (link_to_next_node):
                     raise ValueError("Error: Unexpected link")
                 if next_node.capacity <= self.nodes_status[next_node]:
-                    # faire un if pour changer de chemin si le drone attends depuis trop longtemps
                     drone["waited_turns"] += 1
                     drone["actions"].append("wait")
                 else:
@@ -255,7 +266,6 @@ class DroneActions:
                                 link_to_next_node.capacity
                                 <= self.link_status[link_to_next_node]
                             ):
-                                # faire un if pour changer de chemin si le drone attends depuis trop longtemps
                                 drone["waited_turns"] += 1
                                 drone["actions"].append("wait")
                             else:
