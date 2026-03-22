@@ -181,6 +181,21 @@ class Solver:
                     break
         return path
 
+    def generate_drones_path(
+        self, drone_nbr: int, nodes: list[Node]
+    ) -> list[dict[Node, Node]]:
+        drone_paths = []
+        costs = {node: 0.0 for node in nodes}
+        for i in range(drone_nbr):
+            distances = self.process(nodes, nodes[0], costs)
+            drone_paths.append(self.backtrack(nodes[-1], distances, costs))
+            current = nodes[0]
+            while current != nodes[-1]:
+                if current.capacity != float("inf"):
+                    costs[current] += 2 / current.capacity
+                current = drone_paths[i][current]
+        return drone_paths
+
 
 class DronesDict(TypedDict):
     actions: list[str]
