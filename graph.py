@@ -59,31 +59,19 @@ class Graph:
         connections: list[ConnectionValidator],
     ) -> None:
         for hub in hubs_list:
-            if isinstance(hub, HubValidator):
-                self.nodes.append(
-                    Node(
-                        id=hub.id,
-                        coords=(hub.x, hub.y),
-                        color=hub.color,
-                        zone=hub.zone,
-                        capacity=hub.max_drones
-                        if hub.max_drones
-                        else float("inf"),
-                    )
+            self.nodes.append(
+                Node(
+                    id=hub.id,
+                    coords=(hub.x, hub.y),
+                    color=hub.color,
+                    capacity=hub.max_drones
+                    if hub.max_drones
+                    else float("inf"),
+                    zone=getattr(hub, "zone", ZoneEnum.NORMAL),
+                    start=getattr(hub, "start", False),
+                    end=getattr(hub, "end", False),
                 )
-            else:
-                self.nodes.append(
-                    Node(
-                        id=hub.id,
-                        coords=(hub.x, hub.y),
-                        color=hub.color,
-                        start=hub.start,
-                        end=hub.end,
-                        capacity=hub.max_drones
-                        if hub.max_drones
-                        else float("inf"),
-                    )
-                )
+            )
         for connection in connections:
             first_node = next(
                 (
@@ -146,17 +134,13 @@ class Solver:
                 for link in current[2]._link:
                     for neighbor in link.nodes:
                         if neighbor.zone and neighbor is not current[2]:
-                            if (
-                                distances[neighbor]
-                                > distances[current[2]]
+                            weight = (
+                                distances[current[2]]
                                 + ZoneWeight[neighbor.zone.value].value
                                 + cost[neighbor]
-                            ):
-                                distances[neighbor] = (
-                                    distances[current[2]]
-                                    + ZoneWeight[neighbor.zone.value].value
-                                    + cost[neighbor]
-                                )
+                            )
+                            if distances[neighbor] > weight:
+                                distances[neighbor] = weight
                             heapq.heappush(
                                 queue,
                                 (distances[neighbor], next(count), neighbor),
@@ -173,7 +157,7 @@ class Solver:
         path = {}
         current = end_node
         while count:
-            test = False
+            found = False
             for link in current._link:
                 for neighbor in link.nodes:
                     if neighbor != current:
@@ -191,9 +175,9 @@ class Solver:
                             path[neighbor] = current
                             current = neighbor
                             count = distances[neighbor]
-                            test = True
+                            found = True
                             break
-                if test:
+                if found:
                     break
         return path
 
@@ -259,33 +243,29 @@ class DroneActions:
                     drone["waited_turns"] += 1
                     drone["actions"].append("wait")
                 else:
-                    if next_node.zone.value == "restricted":
-                        if drone["actions"][-1] == "in_link":
-                            self.link_status[link_to_next_node] -= 1
-                            self.nodes_status[next_node] += 1
-                            self.nodes_status[drone["current_node"]] -= 1
-                            step_log.append(f"{color}D{i}-{next_node.id}{end}")
-                            drone["current_node"] = next_node
-                            drone["actions"].append(next_node.id)
-                            drone["waited_turns"] = 0
+                    if (
+                        next_node.zone.value == "restricted"
+                        and drone["actions"][-1] != "in_link"
+                    ):
+                        if (
+                            link_to_next_node.capacity
+                            <= self.link_status[link_to_next_node]
+                        ):
+                            drone["waited_turns"] += 1
+                            drone["actions"].append("wait")
                         else:
-                            if (
-                                link_to_next_node.capacity
-                                <= self.link_status[link_to_next_node]
-                            ):
-                                drone["waited_turns"] += 1
-                                drone["actions"].append("wait")
-                            else:
-                                self.link_status[link_to_next_node] += 1
-                                step_log.append(
-                                    f"{color}D{i}-{drone['current_node'].id}"
-                                    f"-{next_node.id}{end}"
-                                )
-                                drone["actions"].append("in_link")
-                                drone["waited_turns"] = 0
+                            self.link_status[link_to_next_node] += 1
+                            step_log.append(
+                                f"{color}D{i}-{drone['current_node'].id}"
+                                f"-{next_node.id}{end}"
+                            )
+                            drone["actions"].append("in_link")
+                            drone["waited_turns"] = 0
                     elif next_node.zone.value == "blocked":
                         pass
                     else:
+                        if next_node.zone.value == "restricted":
+                            self.link_status[link_to_next_node] -= 1
                         self.nodes_status[next_node] += 1
                         self.nodes_status[drone["current_node"]] -= 1
                         step_log.append(f"{color}D{i}-{next_node.id}{end}")
