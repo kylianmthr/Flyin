@@ -119,14 +119,14 @@ class Visualizer:
         self.screen.blit(img, coords)
         pygame.display.flip()
 
-    def _show_step(self):
+    def _show_step(self) -> None:
         pygame.font.init()
         font = pygame.font.SysFont("Arial", 30)
         surface = font.render(f"{self.step}/{self.max_step}", False, "black")
         self.screen.blit(surface, (3, 3))
         pygame.display.flip()
 
-    def _show_all(self):
+    def _show_all(self) -> None:
         self._draw_map()
         self._draw_drones()
         self._show_step()

@@ -1,4 +1,3 @@
-from pydantic import ValidationError
 from graph import DroneActions, Graph, Solver
 from parser import (
     ConnectionValidator,
@@ -13,16 +12,16 @@ from visualizer import Visualizer
 
 
 class DroneSimulation:
-    def __init__(self, filename) -> None:
+    def __init__(self, filename: str) -> None:
         self.filename = filename
         self.parser = Parser()
         self.graph = Graph(filename)
         self.solver = Solver()
-        self.hubs = []
-        self.connections = []
+        self.hubs: list[HubValidator | StartOrEndHubValidator] = []
+        self.connections: list[ConnectionValidator] = []
         self.drone_nbr = 0
 
-    def load_parser(self):
+    def load_parser(self) -> None:
         self.parser.open(self.filename)
         res = self.parser.process()
         self.hubs = [
@@ -52,10 +51,10 @@ class DroneSimulation:
             )
         )
 
-    def load_graph(self):
+    def load_graph(self) -> None:
         self.graph.convert_to_graph(self.hubs, self.connections)
 
-    def run(self):
+    def run(self) -> None:
         try:
             self.load_parser()
             self.load_graph()
