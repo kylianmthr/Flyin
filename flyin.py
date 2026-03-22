@@ -61,7 +61,6 @@ def main(argv: list[str]) -> None:
                     solver.backtrack(graph.nodes[-1], distances, costs)
                 )
                 current = graph.nodes[0]
-                print("current", current)
                 while current != graph.nodes[-1]:
                     if current.capacity != float("inf"):
                         costs[current] += 2 / current.capacity
@@ -74,9 +73,11 @@ def main(argv: list[str]) -> None:
                 goal=graph.nodes[-1],
             )
             drone_actions.process()
-            print(drone_actions.drones)
             visualizer = Visualizer(
-                graph.nodes, graph.links, drone_actions.drones
+                graph.nodes,
+                graph.links,
+                drone_actions.drones,
+                drone_actions.logs,
             )
             visualizer.run()
             print(
