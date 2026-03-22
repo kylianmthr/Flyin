@@ -37,6 +37,7 @@ class Visualizer:
         self.node_height = (abs(max_y) - abs(min_y)) // 2
         self.offset_x = 400 - self.node_width * self.step_offset
         self.offset_y = 300 - self.node_height * self.step_offset
+        self.img = pygame.image.load("drone.png").convert_alpha()
 
     def _zoom(self) -> None:
         radius = 6
@@ -108,9 +109,8 @@ class Visualizer:
         return (center_x - drone_size // 2, center_y - drone_size // 2)
 
     def _draw_drone(self, node: Node) -> None:
-        img = pygame.image.load("drone.png").convert_alpha()
         img = pygame.transform.scale(
-            img, (15 * self.multiply, 15 * self.multiply)
+            self.img, (15 * self.multiply, 15 * self.multiply)
         )
         coords = self._get_drone_coords(node)
         self.screen.blit(img, coords)
@@ -123,11 +123,19 @@ class Visualizer:
             if event.type == pygame.MOUSEWHEEL:
                 if event.y > 0:
                     self.multiply += 1
-                if event.y < 0 and self.multiply != 1:
+                elif event.y < 0 and self.multiply != 1:
                     self.multiply -= 1
                 self._zoom()
                 self._draw_map()
                 self._draw_drones()
+            if event.type == pygame.MOUSEMOTION:
+                if event.buttons[0]:
+                    dx, dy = event.rel
+                    self.mouse_offset_x += dx
+                    self.mouse_offset_y += dy
+                    self._draw_map()
+                    self._draw_drones()
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.old_x = event.pos[0]
                 self.old_y = event.pos[1]
@@ -138,11 +146,6 @@ class Visualizer:
                     ) ** 2 <= self.radius**2:
                         print(node.id)
                         print("Weight:", ZoneWeight[node.zone.value].value)
-            if event.type == pygame.MOUSEBUTTONUP:
-                self.mouse_offset_x += event.pos[0] - self.old_x
-                self.mouse_offset_y += event.pos[1] - self.old_y
-                self._draw_map()
-                self._draw_drones()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
                     self.step += 1
