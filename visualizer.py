@@ -38,6 +38,9 @@ class Visualizer:
         self.offset_x = 400 - self.node_width * self.step_offset
         self.offset_y = 300 - self.node_height * self.step_offset
         self.img = pygame.image.load("drone.png").convert_alpha()
+        self.max_step = len(
+            max(drones, key=lambda x: len(x["actions"]))["actions"]
+        )
 
     def _zoom(self) -> None:
         radius = 6
@@ -116,6 +119,18 @@ class Visualizer:
         self.screen.blit(img, coords)
         pygame.display.flip()
 
+    def _show_step(self):
+        pygame.font.init()
+        font = pygame.font.SysFont("Arial", 30)
+        surface = font.render(f"{self.step}/{self.max_step}", False, "black")
+        self.screen.blit(surface, (3, 3))
+        pygame.display.flip()
+
+    def _show_all(self):
+        self._draw_map()
+        self._draw_drones()
+        self._show_step()
+
     def _handle_events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -126,16 +141,13 @@ class Visualizer:
                 elif event.y < 0 and self.multiply != 1:
                     self.multiply -= 1
                 self._zoom()
-                self._draw_map()
-                self._draw_drones()
+                self._show_all()
             if event.type == pygame.MOUSEMOTION:
                 if event.buttons[0]:
                     dx, dy = event.rel
                     self.mouse_offset_x += dx
                     self.mouse_offset_y += dy
-                    self._draw_map()
-                    self._draw_drones()
-
+                    self._show_all()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.old_x = event.pos[0]
                 self.old_y = event.pos[1]
@@ -148,14 +160,20 @@ class Visualizer:
                         print("Weight:", ZoneWeight[node.zone.value].value)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
-                    self.step += 1
-                    self._draw_map()
-                    self._draw_drones()
-                    self._print_logs()
+                    if self.step < self.max_step:
+                        self.step += 1
+                        self._show_all()
+                        self._print_logs()
+                if event.key == pygame.K_LEFT:
+                    if self.step > 0:
+                        self.step -= 1
+                        self._show_all()
+                        self._print_logs()
 
     def run(self) -> None:
         self._draw_map()
         self._draw_drones()
+        self._show_step()
         while self.running:
             self._handle_events()
             self.clock.tick(60)

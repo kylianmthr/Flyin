@@ -18,7 +18,7 @@ def main(argv: list[str]) -> None:
         parser.open(argv[1])
         try:
             res = parser.process()
-            graph = Graph("test")
+            graph = Graph(argv[1])
             graph.convert_to_graph(
                 [
                     node["parsed_and_validated_data"]
