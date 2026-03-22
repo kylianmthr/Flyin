@@ -125,6 +125,7 @@ class Visualizer:
             elif drone["actions"][self.step] == "in_link":
                 continue
             elif drone["actions"][self.step] == "wait":
+                print("wait")
                 self._draw_drone(drone["current_node"])
             else:
                 c += 1

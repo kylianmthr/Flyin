@@ -122,7 +122,9 @@ class ZoneWeight(Enum):
 
 
 class Solver:
-    def process(self, nodes: list[Node], start_node: Node) -> dict[Node, float]:
+    def process(
+        self, nodes: list[Node], start_node: Node, cost: dict[Node, float]
+    ) -> dict[Node, float]:
         distances = {node: float("inf") for node in nodes}
         count = itertools.count()
         distances[start_node] = 0
@@ -142,12 +144,12 @@ class Solver:
                                 distances[neighbor]
                                 > distances[current[2]]
                                 + ZoneWeight[neighbor.zone.value].value
+                                + cost[neighbor]
                             ):
-                                if neighbor.zone.value == "priority":
-                                    distances[neighbor] = 1
                                 distances[neighbor] = (
                                     distances[current[2]]
                                     + ZoneWeight[neighbor.zone.value].value
+                                    + cost[neighbor]
                                 )
                             heapq.heappush(
                                 queue,
@@ -156,7 +158,7 @@ class Solver:
         return distances
 
     def backtrack(
-        self, end_node: Node, distances: dict[Node, float]
+        self, end_node: Node, distances: dict[Node, float], cost: dict[Node, float]
     ) -> dict[Node, Node]:
         count = distances[end_node]
         path = {}
@@ -167,8 +169,12 @@ class Solver:
                 for neighbor in link.nodes:
                     if neighbor != current:
                         if (
-                            distances[current] - ZoneWeight[current.zone.value].value
-                            == distances[neighbor]
+                            abs(
+                                distances[current]
+                                - (ZoneWeight[current.zone.value].value + cost[current])
+                                - distances[neighbor]
+                            )
+                            < 1e-9
                         ):
                             path[neighbor] = current
                             current = neighbor
@@ -193,7 +199,7 @@ class DroneActions:
         nodes: list[Node],
         connections: list[Link],
         nbr_drones: int,
-        path: dict[Node, Node],
+        paths: list[dict[Node, Node]],
         goal: Node,
     ) -> None:
         self.nodes_status = {node: 0 for node in nodes}
@@ -202,10 +208,10 @@ class DroneActions:
             {
                 "actions": [nodes[0].id],
                 "current_node": nodes[0],
-                "path": path,
+                "path": paths[i],
                 "waited_turns": 0,
             }
-            for _ in range(nbr_drones)
+            for i in range(nbr_drones)
         ]
         self.goal = goal
 

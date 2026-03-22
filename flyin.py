@@ -37,22 +37,7 @@ def main(argv: list[str]) -> None:
                     )
                 ],
             )
-            print("Neighbors:", graph.nodes[0]._link)
             solver = Solver()
-            path = solver.backtrack(
-                graph.nodes[-1],
-                solver.process(graph.nodes, graph.nodes[0]),
-            )
-            current = graph.nodes[0]
-            path_str = f"{current.id}"
-            while current != graph.nodes[-1]:
-                current = path[current]
-                path_str += f" -> {current.id}"
-            print(path_str)
-            print(
-                "Path to first node to last node:",
-            )
-            print(graph.nodes[-1].end)
             drone_nbr = next(
                 (
                     validator["parsed_and_validated_data"].nbr
@@ -64,10 +49,21 @@ def main(argv: list[str]) -> None:
                 ),
                 None,
             )
-            if not (drone_nbr):
-                raise ValueError("jsp j'crois c'est pas possible")
+            if drone_nbr is None:
+                raise ValueError("test")
+            drone_paths = []
+            costs = {node: 0.0 for node in graph.nodes}
+            for i in range(drone_nbr):
+                distances = solver.process(graph.nodes, graph.nodes[0], costs)
+                drone_paths.append(solver.backtrack(graph.nodes[-1], distances, costs))
+                current = graph.nodes[0]
+                print("current", current)
+                while current != graph.nodes[-1]:
+                    if current.capacity != float("inf"):
+                        costs[current] += 2 / current.capacity
+                    current = drone_paths[i][current]
             drone_actions = DroneActions(
-                graph.nodes, graph.links, drone_nbr, path, goal=graph.nodes[-1]
+                graph.nodes, graph.links, drone_nbr, drone_paths, goal=graph.nodes[-1]
             )
             drone_actions.process()
             print(drone_actions.drones)
