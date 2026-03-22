@@ -1,7 +1,6 @@
 from enum import Enum
 import itertools
 import heapq
-from os import link
 from typing import List, TypedDict
 from parser import (
     ConnectionValidator,
@@ -279,7 +278,8 @@ class DroneActions:
                             else:
                                 self.link_status[link_to_next_node] += 1
                                 step_log.append(
-                                    f"{color}D{i}-{drone['current_node'].id}-{next_node.id}{end}"
+                                    f"{color}D{i}-{drone['current_node'].id}"
+                                    f"-{next_node.id}{end}"
                                 )
                                 drone["actions"].append("in_link")
                                 drone["waited_turns"] = 0
