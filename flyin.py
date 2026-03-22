@@ -27,9 +27,7 @@ def main(argv: list[str]) -> None:
                         node["parsed_and_validated_data"],
                         StartOrEndHubValidator,
                     )
-                    or isinstance(
-                        node["parsed_and_validated_data"], HubValidator
-                    )
+                    or isinstance(node["parsed_and_validated_data"], HubValidator)
                 ],
                 [
                     node["parsed_and_validated_data"]
@@ -73,10 +71,15 @@ def main(argv: list[str]) -> None:
             )
             drone_actions.process()
             print(drone_actions.drones)
-            visualizer = Visualizer(
-                graph.nodes, graph.links, drone_actions.drones
-            )
+            visualizer = Visualizer(graph.nodes, graph.links, drone_actions.drones)
             visualizer.run()
+            print(
+                len(
+                    max(drone_actions.drones, key=lambda x: len(x["actions"]))[
+                        "actions"
+                    ]
+                )
+            )
         except (ValidationError, ValueError) as e:
             print("Error:", e)
     except (FileNotFoundError, PermissionError) as e:
