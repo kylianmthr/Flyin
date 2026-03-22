@@ -116,35 +116,35 @@ class Visualizer:
                     )
 
         pygame.display.flip()
+        c = 0
         for drone in self.drones:
             if len(drone["actions"]) <= self.step:
-                self._draw_drone(
-                    next(
-                        node
-                        for node in self.nodes
-                        if node.id == drone["actions"][-1]
-                    )
+                c += 1
+                drone["current_node"] = next(
+                    node
+                    for node in self.nodes
+                    if node.id == drone["actions"][-1]
                 )
+                self._draw_drone(drone["current_node"])
             elif drone["actions"][self.step] == "in_link":
                 continue
             elif drone["actions"][self.step] == "wait":
-                temp = drone["actions"]
-                temp.remove("wait")
-                if "in_link" in drone["actions"]:
-                    temp.remove("in_link")
-                self._draw_drone(
-                    next(node for node in self.nodes if node.id == temp[-1])
-                )
+                print("wait")
+                self._draw_drone(drone["current_node"])
             else:
-                self._draw_drone(
-                    next(
-                        node
-                        for node in self.nodes
-                        if node.id == drone["actions"][self.step]
-                    )
+                c += 1
+                drone["current_node"] = next(
+                    node
+                    for node in self.nodes
+                    if node.id == drone["actions"][self.step]
                 )
+                self._draw_drone(drone["current_node"])
+        if c == len(self.drones):
+            print("MAX")
+        else:
+            print("continue")
 
-    def _get_node_coords(self, node: Node):
+    def _get_node_coords(self, node: Node) -> tuple[int, int]:
         radius = 6 * self.multiply
         offset = 15 * self.multiply
         step = radius + offset
@@ -155,7 +155,7 @@ class Visualizer:
         drone_size = 15 * self.multiply
         return (center_x - drone_size // 2, center_y - drone_size // 2)
 
-    def _draw_drone(self, node):
+    def _draw_drone(self, node: Node) -> None:
         img = pygame.image.load("drone.png").convert_alpha()
         img = pygame.transform.scale(
             img, (15 * self.multiply, 15 * self.multiply)

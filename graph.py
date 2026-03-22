@@ -1,7 +1,6 @@
 from enum import Enum
 import itertools
 import heapq
-from os import link
 from typing import List, TypedDict
 from parser import (
     ConnectionValidator,
@@ -130,7 +129,7 @@ class ZoneWeight(Enum):
 
 class Solver:
     def process(
-        self, nodes: list[Node], start_node: Node
+        self, nodes: list[Node], start_node: Node, cost: dict[Node, float]
     ) -> dict[Node, float]:
         distances = {node: float("inf") for node in nodes}
         count = itertools.count()
@@ -143,24 +142,21 @@ class Solver:
             if current[2] in visited:
                 continue
             visited.append(current[2])
-            print(current)
             if current[2]._link:
                 for link in current[2]._link:
                     for neighbor in link.nodes:
-                        print(neighbor)
                         if neighbor.zone and neighbor is not current[2]:
                             if (
                                 distances[neighbor]
                                 > distances[current[2]]
                                 + ZoneWeight[neighbor.zone.value].value
+                                + cost[neighbor]
                             ):
-                                if neighbor.zone.value == "priority":
-                                    distances[neighbor] = 1
                                 distances[neighbor] = (
                                     distances[current[2]]
                                     + ZoneWeight[neighbor.zone.value].value
+                                    + cost[neighbor]
                                 )
-                            print(neighbor)
                             heapq.heappush(
                                 queue,
                                 (distances[neighbor], next(count), neighbor),
@@ -168,7 +164,10 @@ class Solver:
         return distances
 
     def backtrack(
-        self, end_node: Node, distances: dict[Node, float]
+        self,
+        end_node: Node,
+        distances: dict[Node, float],
+        cost: dict[Node, float],
     ) -> dict[Node, Node]:
         count = distances[end_node]
         path = {}
@@ -179,9 +178,15 @@ class Solver:
                 for neighbor in link.nodes:
                     if neighbor != current:
                         if (
-                            distances[current]
-                            - ZoneWeight[current.zone.value].value
-                            == distances[neighbor]
+                            abs(
+                                distances[current]
+                                - (
+                                    ZoneWeight[current.zone.value].value
+                                    + cost[current]
+                                )
+                                - distances[neighbor]
+                            )
+                            < 1e-9
                         ):
                             path[neighbor] = current
                             current = neighbor
@@ -206,7 +211,7 @@ class DroneActions:
         nodes: list[Node],
         connections: list[Link],
         nbr_drones: int,
-        path: dict[Node, Node],
+        paths: list[dict[Node, Node]],
         goal: Node,
     ) -> None:
         self.nodes_status = {node: 0 for node in nodes}
@@ -215,14 +220,14 @@ class DroneActions:
             {
                 "actions": [nodes[0].id],
                 "current_node": nodes[0],
-                "path": path,
+                "path": paths[i],
                 "waited_turns": 0,
             }
-            for _ in range(nbr_drones)
+            for i in range(nbr_drones)
         ]
         self.goal = goal
 
-    def finish(self):
+    def finish(self) -> bool:
         for drone in self.drones:
             if drone["current_node"] != self.goal:
                 return False
@@ -245,13 +250,14 @@ class DroneActions:
                 if not (link_to_next_node):
                     raise ValueError("Error: Unexpected link")
                 if next_node.capacity <= self.nodes_status[next_node]:
-                    # faire un if pour changer de chemin si le drone attends depuis trop longtemps
                     drone["waited_turns"] += 1
                     drone["actions"].append("wait")
                 else:
                     if next_node.zone.value == "restricted":
                         if drone["actions"][-1] == "in_link":
                             self.link_status[link_to_next_node] -= 1
+                            self.nodes_status[next_node] += 1
+                            self.nodes_status[drone["current_node"]] -= 1
                             drone["current_node"] = next_node
                             drone["actions"].append(next_node.id)
                             drone["waited_turns"] = 0
@@ -260,8 +266,6 @@ class DroneActions:
                                 link_to_next_node.capacity
                                 <= self.link_status[link_to_next_node]
                             ):
-                                print("la")
-                                # faire un if pour changer de chemin si le drone attends depuis trop longtemps
                                 drone["waited_turns"] += 1
                                 drone["actions"].append("wait")
                             else:
@@ -271,7 +275,8 @@ class DroneActions:
                     elif next_node.zone.value == "blocked":
                         pass
                     else:
-                        self.link_status[link_to_next_node] -= 1
+                        self.nodes_status[next_node] += 1
+                        self.nodes_status[drone["current_node"]] -= 1
                         drone["current_node"] = next_node
                         drone["actions"].append(next_node.id)
                         drone["waited_turns"] = 0
