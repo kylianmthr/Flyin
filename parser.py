@@ -267,6 +267,13 @@ class HubValidator(BaseModel):
         return self
 
     @model_validator(mode="after")
+    def color_check(self: "HubValidator") -> "HubValidator":
+        if self.color:
+            if " " in self.color:
+                raise ValueError("Error: Color must be single word")
+        return self
+
+    @model_validator(mode="after")
     def drones_check(self: "HubValidator") -> "HubValidator":
         if self.max_drones:
             if self.max_drones < 0:
