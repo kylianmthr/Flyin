@@ -18,24 +18,32 @@ class ProcessedDict(TypedDict):
 
 class Parser:
     def __init__(self) -> None:
+        """Initializes an empty parser buffer."""
         self.content = ""
 
     def open(self, filename: str) -> None:
-        """Open the map file that will be parsed
+        """Opens and loads the raw content of a map file.
 
         Args:
-            filename (str): The path to the map file
-        Returns:
-            str: The file content
+            filename: Path to the map file.
+
         Raises:
-            FileNotFound: The path to the file is incorrect
-            PermissionError: The program can't access to the file
+            FileNotFoundError: If the file does not exist.
+            PermissionError: If the file cannot be read.
         """
         print(filename)
         with open(filename, "r") as f:
             self.content = f.read()
 
     def process(self) -> list[ProcessedDict]:
+        """Parses all meaningful lines and validates their content.
+
+        Returns:
+            A list of parsed and validated objects with parser metadata.
+
+        Raises:
+            ValueError: If a line is malformed or validation fails.
+        """
         res = []
         parser = ParserManager()
         lines = self.content.split("\n")
@@ -63,14 +71,34 @@ class Parser:
 class SpecificParser(ABC):
     @abstractmethod
     def process(self, line: str) -> dict:
+        """Parses a single line into a structured dictionary.
+
+        Args:
+            line: Raw line to parse.
+
+        Returns:
+            Parsed key-value data for validation.
+        """
         pass
 
 
 class DroneCountParser(SpecificParser):
     def __init__(self) -> None:
+        """Initializes the drone-count parser regex."""
         self._regex = re.compile(r"^nb_drones:\s+(?P<nbr>\d+)", re.M)
 
     def process(self, line: str) -> dict:
+        """Parses a drone-count line.
+
+        Args:
+            line: Raw line declaring the number of drones.
+
+        Returns:
+            Parsed drone count dictionary.
+
+        Raises:
+            ValueError: If the line format is invalid.
+        """
         match = self._regex.match(line)
         if not match:
             raise ValueError("Error: Line malformed.")
@@ -81,6 +109,7 @@ class DroneCountParser(SpecificParser):
 
 class StartHubParser(SpecificParser):
     def __init__(self) -> None:
+        """Initializes regex patterns for start-hub lines."""
         self._regex = re.compile(
             (
                 r"^start_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+(?P<y>\-?\d+)"
@@ -97,6 +126,17 @@ class StartHubParser(SpecificParser):
         )
 
     def process(self, line: str) -> dict:
+        """Parses a start-hub line.
+
+        Args:
+            line: Raw start-hub declaration.
+
+        Returns:
+            Parsed start-hub attributes.
+
+        Raises:
+            ValueError: If the line format is invalid.
+        """
         match = self._regex.match(line)
         if not match:
             raise ValueError("Error: Line malformed.")
@@ -117,6 +157,7 @@ class StartHubParser(SpecificParser):
 
 class HubParser(SpecificParser):
     def __init__(self) -> None:
+        """Initializes regex patterns for regular hub lines."""
         self._regex = re.compile(
             (
                 r"^hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)\s+"
@@ -133,6 +174,17 @@ class HubParser(SpecificParser):
         )
 
     def process(self, line: str) -> dict:
+        """Parses a regular hub line.
+
+        Args:
+            line: Raw hub declaration.
+
+        Returns:
+            Parsed hub attributes.
+
+        Raises:
+            ValueError: If the line format is invalid.
+        """
         match = self._regex.match(line)
         if not match:
             raise ValueError("Error: Line malformed.")
@@ -156,6 +208,7 @@ class HubParser(SpecificParser):
 
 class EndHubParser(SpecificParser):
     def __init__(self) -> None:
+        """Initializes regex patterns for end-hub lines."""
         self._regex = re.compile(
             (
                 r"^end_hub:\s+(?P<id>\w+)\s+(?P<x>\-?\d+)"
@@ -172,6 +225,17 @@ class EndHubParser(SpecificParser):
         )
 
     def process(self, line: str) -> dict:
+        """Parses an end-hub line.
+
+        Args:
+            line: Raw end-hub declaration.
+
+        Returns:
+            Parsed end-hub attributes.
+
+        Raises:
+            ValueError: If the line format is invalid.
+        """
         match = self._regex.match(line)
         if not match:
             raise ValueError("Error: Line malformed.")
@@ -192,6 +256,7 @@ class EndHubParser(SpecificParser):
 
 class ConnectionParser(SpecificParser):
     def __init__(self) -> None:
+        """Initializes regex patterns for connection lines."""
         self._regex = re.compile(
             r"^connection:\s+(?P<connection>\b\w+-\b\w+)(?P<extra>.*)$", re.M
         )
@@ -201,6 +266,17 @@ class ConnectionParser(SpecificParser):
         )
 
     def process(self, line: str) -> dict:
+        """Parses a connection line.
+
+        Args:
+            line: Raw connection declaration.
+
+        Returns:
+            Parsed connection attributes.
+
+        Raises:
+            ValueError: If the line format is invalid.
+        """
         match = self._regex.match(line)
         if not match:
             raise ValueError("Error: Line malformed.")
@@ -230,6 +306,14 @@ class StartOrEndHubValidator(BaseModel):
 
     @model_validator(mode="after")
     def id_check(self: "StartOrEndHubValidator") -> "StartOrEndHubValidator":
+        """Validates that a hub identifier does not contain separators.
+
+        Returns:
+            The validated model instance.
+
+        Raises:
+            ValueError: If the identifier contains a hyphen.
+        """
         if "-" in self.id:
             raise ValueError("Error: id can't contain separator")
         return self
@@ -238,6 +322,17 @@ class StartOrEndHubValidator(BaseModel):
     def already_exist(
         self: "StartOrEndHubValidator", info: ValidationInfo
     ) -> "StartOrEndHubValidator":
+        """Validates that the hub identifier is unique in context.
+
+        Args:
+            info: Validation context containing declared hubs.
+
+        Returns:
+            The validated model instance.
+
+        Raises:
+            ValueError: If context is missing or the hub already exists.
+        """
         if info.context:
             if self.id not in info.context["hubs"]:
                 return self
@@ -262,12 +357,28 @@ class HubValidator(BaseModel):
 
     @model_validator(mode="after")
     def id_check(self: "HubValidator") -> "HubValidator":
+        """Validates that a hub identifier does not contain separators.
+
+        Returns:
+            The validated model instance.
+
+        Raises:
+            ValueError: If the identifier contains a hyphen.
+        """
         if "-" in self.id:
             raise ValueError("Error: id can't contain separator")
         return self
 
     @model_validator(mode="after")
     def color_check(self: "HubValidator") -> "HubValidator":
+        """Validates that the optional color value is a single word.
+
+        Returns:
+            The validated model instance.
+
+        Raises:
+            ValueError: If the color contains spaces.
+        """
         if self.color:
             if " " in self.color:
                 raise ValueError("Error: Color must be single word")
@@ -275,6 +386,14 @@ class HubValidator(BaseModel):
 
     @model_validator(mode="after")
     def drones_check(self: "HubValidator") -> "HubValidator":
+        """Validates the optional hub capacity value.
+
+        Returns:
+            The validated model instance.
+
+        Raises:
+            ValueError: If max_drones is negative.
+        """
         if self.max_drones:
             if self.max_drones < 0:
                 raise ValueError("Error: max_drones must be a positive number")
@@ -284,6 +403,17 @@ class HubValidator(BaseModel):
     def already_exist(
         self: "HubValidator", info: ValidationInfo
     ) -> "HubValidator":
+        """Validates that the hub identifier is unique in context.
+
+        Args:
+            info: Validation context containing declared hubs.
+
+        Returns:
+            The validated model instance.
+
+        Raises:
+            ValueError: If context is missing or the hub already exists.
+        """
         if info.context:
             if self.id not in info.context["hubs"]:
                 return self
@@ -299,6 +429,17 @@ class ConnectionValidator(BaseModel):
     def connection_check(
         self: "ConnectionValidator", info: ValidationInfo
     ) -> "ConnectionValidator":
+        """Validates connection format, uniqueness, and referenced hubs.
+
+        Args:
+            info: Validation context containing hubs and connections.
+
+        Returns:
+            The validated model instance.
+
+        Raises:
+            ValueError: If the connection is invalid or duplicated.
+        """
         if "-" not in self.connection:
             raise ValueError("Error: Connections must include separator")
         if info.context:
@@ -333,6 +474,7 @@ class ParsersDict(TypedDict):
 
 class ParserManager:
     def __init__(self) -> None:
+        """Initializes parser registry and tracking state."""
         self._parsers: dict[str, ParsersDict] = {
             "drone_count": {
                 "parser": DroneCountParser(),
@@ -359,6 +501,17 @@ class ParserManager:
         self,
         data: str,
     ) -> ProcessedDict:
+        """Finds a matching parser, validates output, and tracks state.
+
+        Args:
+            data: A non-comment line from the map file.
+
+        Returns:
+            Parsed and validated data with parser metadata.
+
+        Raises:
+            ValueError: If no parser matches or validation fails.
+        """
         for parser in self._parsers:
             try:
                 res = self._parsers[parser]["parser"].process(data)

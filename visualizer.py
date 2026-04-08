@@ -17,6 +17,20 @@ class Card:
         desc_color: tuple[int, int, int] = (71, 85, 105),
         shadow_color: tuple[int, int, int] = (210, 215, 220),
     ) -> None:
+        """Initializes an information card UI component.
+
+        Args:
+            x: Left position in pixels.
+            y: Top position in pixels.
+            width: Card width in pixels.
+            height: Card height in pixels.
+            title: Card title text.
+            description: Card body text.
+            bg_color: Card background color.
+            title_color: Title text color.
+            desc_color: Description text color.
+            shadow_color: Shadow color.
+        """
         self.rect = pygame.Rect(x, y, width, height)
         self.title = title
         self.description = description
@@ -38,6 +52,15 @@ class Card:
         color: tuple[int, int, int],
         rect: pygame.Rect,
     ) -> None:
+        """Draws wrapped text within a bounding rectangle.
+
+        Args:
+            surface: Destination surface.
+            text: Text to render.
+            font: Font used for rendering.
+            color: Text color.
+            rect: Bounding rectangle for wrapped text.
+        """
         words = text.split(" ")
         lines = []
         current_line = []
@@ -57,6 +80,11 @@ class Card:
             y_offset += font.get_linesize() + 4
 
     def draw(self, surface: pygame.Surface) -> None:
+        """Renders the full card with title and wrapped description.
+
+        Args:
+            surface: Destination surface.
+        """
         shadow_rect = self.rect.copy()
         shadow_rect.x += self.shadow_offset
         shadow_rect.y += self.shadow_offset
@@ -102,6 +130,15 @@ class Visualizer:
         logs: list[list[str]],
         max_turns: int,
     ) -> None:
+        """Initializes pygame state for simulation playback.
+
+        Args:
+            nodes: Nodes to render.
+            connections: Links to render.
+            paths: Time-indexed drone paths.
+            logs: Per-turn movement logs.
+            max_turns: Total number of turns in the simulation.
+        """
         pygame.init()
         self.paths = paths
         self.nodes = nodes
@@ -143,6 +180,7 @@ class Visualizer:
         self.capacities[nodes[0].id] = len(paths)
 
     def _zoom(self) -> None:
+        """Recomputes drawing dimensions after zoom changes."""
         radius = 6
         offset = 10
         self.radius = radius * self.multiply
@@ -152,6 +190,14 @@ class Visualizer:
         self.offset_y = 300 - self.node_height * self.step_offset
 
     def _get_node_coords(self, node: Node) -> tuple[int, int]:
+        """Converts a node position to screen coordinates.
+
+        Args:
+            node: Node to project.
+
+        Returns:
+            The node screen coordinates.
+        """
         return (
             self.offset_x
             + node.coords[0] * (self.offset * self.multiply + self.radius)
@@ -162,6 +208,7 @@ class Visualizer:
         )
 
     def _draw_map(self) -> None:
+        """Draws all links and nodes for the current viewport."""
         self.screen.fill("white")
         for link in self.connections:
             pygame.draw.line(
@@ -190,6 +237,7 @@ class Visualizer:
         pygame.display.flip()
 
     def _draw_drones(self) -> None:
+        """Draws drone sprites and updates node occupancy counters."""
         for node in self.nodes:
             self.capacities[node.id] = 0
         for path in self.paths:
@@ -208,15 +256,29 @@ class Visualizer:
                 pass
 
     def _print_logs(self) -> None:
+        """Prints logs for the current displayed simulation turn."""
         if self.step - 1 >= 0 and self.step <= len(self.logs):
             self.console.print(" ".join(self.logs[self.step - 1]))
 
     def _get_drone_coords(self, node: Node) -> tuple[int, int]:
+        """Computes top-left sprite coordinates for a drone on a node.
+
+        Args:
+            node: Node where the drone is located.
+
+        Returns:
+            Top-left screen coordinates for the drone sprite.
+        """
         center_x, center_y = self._get_node_coords(node)
         drone_size = 15 * self.multiply
         return (center_x - drone_size // 2, center_y - drone_size // 2)
 
     def _draw_drone(self, node: Node) -> None:
+        """Draws a single drone sprite on the given node.
+
+        Args:
+            node: Node where the drone should be rendered.
+        """
         img = pygame.transform.scale(
             self.img, (15 * self.multiply, 15 * self.multiply)
         )
@@ -225,6 +287,7 @@ class Visualizer:
         pygame.display.flip()
 
     def _show_step(self) -> None:
+        """Displays the current turn indicator on the screen."""
         pygame.font.init()
         font = pygame.font.SysFont("arial", 30)
         surface = font.render(f"{self.step}/{self.max_step}", False, "black")
@@ -232,11 +295,13 @@ class Visualizer:
         pygame.display.flip()
 
     def _show_all(self) -> None:
+        """Renders map, drones, and turn indicator in one pass."""
         self._draw_map()
         self._draw_drones()
         self._show_step()
 
     def _handle_events(self) -> None:
+        """Handles input events for zoom, pan, selection, and stepping."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -285,6 +350,7 @@ class Visualizer:
                         self._print_logs()
 
     def run(self) -> None:
+        """Starts and maintains the interactive visualization loop."""
         self._show_all()
         while self.running:
             self._handle_events()

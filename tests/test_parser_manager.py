@@ -59,6 +59,13 @@ from parser import (
 def test_choose_right_parser(
     line: str, expectation: ContextManager[Any], expected_return: dict
 ) -> None:
+    """Verifies parser manager dispatches lines to the expected parser.
+
+    Args:
+        line: Input line to parse.
+        expectation: Context manager defining expected outcome.
+        expected_return: Expected parser name and validated type.
+    """
     with expectation:
         parser = ParserManager()
         parser.hubs = ["truc", "jsp"]

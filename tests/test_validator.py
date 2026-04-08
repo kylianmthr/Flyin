@@ -23,6 +23,13 @@ def test_validate_drone_count(
     expectation: ContextManager[Any],
     expected_validation: DroneCountValidator,
 ) -> None:
+    """Validates drone-count payloads against the pydantic model.
+
+    Args:
+        parsed_dict: Payload to validate.
+        expectation: Context manager defining expected outcome.
+        expected_validation: Expected validated model on success.
+    """
     with expectation:
         res = DroneCountValidator(**parsed_dict)
         assert expected_validation == res
@@ -85,6 +92,13 @@ def test_validate_drone_count(
 def test_validate_start_hub(
     parsed_dict: dict, hubs_list: list[str], expectation: ContextManager[Any]
 ) -> None:
+    """Validates start/end hub payloads with contextual hub uniqueness.
+
+    Args:
+        parsed_dict: Payload to validate.
+        hubs_list: Already-declared hubs for uniqueness checks.
+        expectation: Context manager defining expected outcome.
+    """
     with expectation:
         StartOrEndHubValidator.model_validate(
             parsed_dict, context={"hubs": hubs_list}
@@ -146,6 +160,13 @@ def test_validate_start_hub(
 def test_validate_hub(
     parsed_dict: dict, hubs_list: list[str], expectation: ContextManager[Any]
 ) -> None:
+    """Validates regular hub payloads with context-aware checks.
+
+    Args:
+        parsed_dict: Payload to validate.
+        hubs_list: Already-declared hubs for uniqueness checks.
+        expectation: Context manager defining expected outcome.
+    """
     with expectation:
         HubValidator.model_validate(parsed_dict, context={"hubs": hubs_list})
 
@@ -191,6 +212,14 @@ def test_validate_connection(
     hubs_list: list[str],
     expectation: ContextManager[Any],
 ) -> None:
+    """Validates connection payloads with hub and duplicate constraints.
+
+    Args:
+        parsed_dict: Payload to validate.
+        connections_list: Existing connections for duplicate detection.
+        hubs_list: Existing hubs for endpoint validation.
+        expectation: Context manager defining expected outcome.
+    """
     with expectation:
         ConnectionValidator.model_validate(
             parsed_dict,

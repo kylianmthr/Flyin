@@ -13,6 +13,12 @@ from collections import defaultdict
 
 class Link:
     def __init__(self, capacity: int, node: list["Node"]) -> None:
+        """Initializes a link connecting two nodes.
+
+        Args:
+            capacity: Maximum drones allowed on the link per turn.
+            node: Two endpoint nodes connected by the link.
+        """
         self.capacity = capacity
         self.nodes: list[Node] = node
 
@@ -28,6 +34,17 @@ class Node:
         end: bool = False,
         zone: ZoneEnum = ZoneEnum.NORMAL,
     ) -> None:
+        """Initializes a graph node with capacities and metadata.
+
+        Args:
+            id: Unique node identifier.
+            coords: Node coordinates in the map.
+            color: Optional display color.
+            capacity: Maximum drones allowed in the node.
+            start: Whether this node is the start hub.
+            end: Whether this node is the end hub.
+            zone: Zone type affecting traversal cost.
+        """
         self.id = id
         self.coords = coords
         self.color = color
@@ -41,15 +58,30 @@ class Node:
         self._link: list[Link] = []
 
     def add_connection(self, link: Link) -> None:
+        """Attaches a link to this node.
+
+        Args:
+            link: Link to add to the node.
+        """
         self._link.append(link)
 
     def remove_connection(self, link: Link) -> None:
+        """Detaches a link from this node.
+
+        Args:
+            link: Link to remove from the node.
+        """
         if self._link:
             self._link.remove(link)
 
 
 class Graph:
     def __init__(self, name: str) -> None:
+        """Initializes an empty graph container.
+
+        Args:
+            name: Source map name.
+        """
         self.name = name
         self.nodes: list[Node] = []
         self.links: list[Link] = []
@@ -59,6 +91,12 @@ class Graph:
         hubs_list: list[HubValidator | StartOrEndHubValidator],
         connections: list[ConnectionValidator],
     ) -> None:
+        """Builds node and link objects from validated parser output.
+
+        Args:
+            hubs_list: Validated hubs to convert into nodes.
+            connections: Validated connections to convert into links.
+        """
         for hub in hubs_list:
             self.nodes.append(
                 Node(
@@ -99,6 +137,11 @@ class Graph:
                 second_node.add_connection(link)
 
     def remove(self, target: "Node") -> None:
+        """Removes a node and any incident connections from the graph.
+
+        Args:
+            target: Node to remove.
+        """
         self.nodes.remove(target)
         for node in self.nodes:
             try:
@@ -118,6 +161,7 @@ class ZoneWeight(Enum):
 
 class Solver:
     def __init__(self) -> None:
+        """Initializes reservation tables for nodes and links."""
         self.node_reservations: dict[tuple[Node, float | int], int] = (
             defaultdict(int)
         )
@@ -129,6 +173,16 @@ class Solver:
         end_node: Node,
         start_turn: int,
     ) -> dict[tuple[Node, int], float]:
+        """Runs a time-aware shortest-path search with reservations.
+
+        Args:
+            start_node: Start node for pathfinding.
+            end_node: Destination node for pathfinding.
+            start_turn: Initial turn index.
+
+        Returns:
+            Distances indexed by (node, turn) states.
+        """
         distances: dict[tuple[Node, int], float] = defaultdict(
             lambda: float("inf")
         )
@@ -197,6 +251,19 @@ class Solver:
         arrival_turn: int,
         distances: dict[tuple[Node, int], float],
     ) -> dict[int, Node]:
+        """Reconstructs a path from destination back to the start.
+
+        Args:
+            end_node: Destination node to start reconstruction from.
+            arrival_turn: Turn at which destination is reached.
+            distances: State distances produced by `process`.
+
+        Returns:
+            A mapping of turn to node for the reconstructed path.
+
+        Raises:
+            ValueError: If no predecessor state can be found.
+        """
         path: dict[int, Node] = {}
         current_node = end_node
         current_turn = arrival_turn
@@ -239,6 +306,19 @@ class Solver:
     def generate_drones_path(
         self, drone_nbr: int, nodes: list[Node], end_node: Node
     ) -> list[dict[int, Node]]:
+        """Generates conflict-aware paths for every drone.
+
+        Args:
+            drone_nbr: Number of drones to route.
+            nodes: Graph nodes, with start node at index 0.
+            end_node: Destination node.
+
+        Returns:
+            A list of per-drone time-indexed paths.
+
+        Raises:
+            ValueError: If a valid path cannot be found for a drone.
+        """
         drone_paths = []
         for i in range(drone_nbr):
             distances = self.process(nodes[0], end_node, 0)
@@ -290,6 +370,13 @@ class DroneActions:
         paths: list[dict[int, "Node"]],
         goal: "Node",
     ) -> None:
+        """Initializes action logging for computed drone paths.
+
+        Args:
+            nbr_drones: Number of drones in the simulation.
+            paths: Per-drone mapping of turn to node.
+            goal: Destination node for all drones.
+        """
         self.nbr_drones = nbr_drones
         self.paths = paths
         self.goal = goal
@@ -297,6 +384,7 @@ class DroneActions:
         self.max_turn = max(max(path.keys()) for path in paths) if paths else 0
 
     def process(self) -> None:
+        """Builds per-turn movement logs from computed paths."""
         for current_turn in range(1, self.max_turn + 1):
             step_log = []
             for i in range(self.nbr_drones):

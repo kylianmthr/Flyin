@@ -48,6 +48,12 @@ from contextlib import nullcontext as does_not_raise
     ],
 )
 def test_with_real_files(path: str, expectation: ContextManager[Any]) -> None:
+    """Checks that parser can open each bundled map file.
+
+    Args:
+        path: Map path under test.
+        expectation: Context manager defining expected outcome.
+    """
     with expectation:
         parser = Parser()
         parser.open(path)
