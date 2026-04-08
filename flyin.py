@@ -59,21 +59,21 @@ class DroneSimulation:
             self.load_parser()
             self.load_graph()
             drone_paths = self.solver.generate_drones_path(
-                self.drone_nbr, self.graph.nodes
+                self.drone_nbr, self.graph.nodes, self.graph.nodes[-1]
             )
             drone_actions = DroneActions(
-                self.graph.nodes,
-                self.graph.links,
                 self.drone_nbr,
                 drone_paths,
                 goal=self.graph.nodes[-1],
             )
             drone_actions.process()
+            print(drone_actions.paths)
             visualizer = Visualizer(
                 self.graph.nodes,
                 self.graph.links,
-                drone_actions.drones,
+                drone_actions.paths,
                 drone_actions.logs,
+                drone_actions.max_turn,
             )
             visualizer.run()
         except Exception as e:
