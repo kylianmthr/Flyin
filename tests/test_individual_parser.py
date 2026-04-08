@@ -19,6 +19,12 @@ from contextlib import nullcontext as does_not_raise
     ],
 )
 def test_open_file(path: str, expectation: ContextManager[Any]) -> None:
+    """Checks file opening behavior for valid and invalid paths.
+
+    Args:
+        path: File path under test.
+        expectation: Context manager defining expected outcome.
+    """
     with expectation:
         Parser().open(path)
 
@@ -34,6 +40,13 @@ def test_open_file(path: str, expectation: ContextManager[Any]) -> None:
 def test_parse_drone_number(
     line: str, expectation: ContextManager[Any], expected_output: dict | None
 ) -> None:
+    """Checks drone-count parser behavior for valid and invalid lines.
+
+    Args:
+        line: Line to parse.
+        expectation: Context manager defining expected outcome.
+        expected_output: Expected parsed output when successful.
+    """
     with expectation:
         res = DroneCountParser().process(line)
         assert res == expected_output
@@ -97,6 +110,13 @@ def test_parse_drone_number(
 def test_parse_start_hub(
     line: str, expectation: ContextManager[Any], expected_output: dict | None
 ) -> None:
+    """Checks start-hub parser behavior across supported formats.
+
+    Args:
+        line: Line to parse.
+        expectation: Context manager defining expected outcome.
+        expected_output: Expected parsed output when successful.
+    """
     with expectation:
         res = StartHubParser().process(line)
         assert res == expected_output
@@ -172,6 +192,13 @@ def test_parse_start_hub(
 def test_parse_hub(
     line: str, expectation: ContextManager[Any], expected_output: dict | None
 ) -> None:
+    """Checks regular hub parser behavior across supported formats.
+
+    Args:
+        line: Line to parse.
+        expectation: Context manager defining expected outcome.
+        expected_output: Expected parsed output when successful.
+    """
     with expectation:
         res = HubParser().process(line)
         assert res == expected_output
@@ -235,6 +262,13 @@ def test_parse_hub(
 def test_parse_end_hub(
     line: str, expectation: ContextManager[Any], expected_output: dict | None
 ) -> None:
+    """Checks end-hub parser behavior across supported formats.
+
+    Args:
+        line: Line to parse.
+        expectation: Context manager defining expected outcome.
+        expected_output: Expected parsed output when successful.
+    """
     with expectation:
         res = EndHubParser().process(line)
         assert res == expected_output
@@ -261,6 +295,13 @@ def test_parse_end_hub(
 def test_parse_connection(
     line: str, expectation: ContextManager[Any], expected_output: dict | None
 ) -> None:
+    """Checks connection parser behavior for valid and invalid lines.
+
+    Args:
+        line: Line to parse.
+        expectation: Context manager defining expected outcome.
+        expected_output: Expected parsed output when successful.
+    """
     with expectation:
         res = ConnectionParser().process(line)
         assert res == expected_output

@@ -13,6 +13,11 @@ from visualizer import Visualizer
 
 class DroneSimulation:
     def __init__(self, filename: str) -> None:
+        """Initializes a simulation instance for a map file.
+
+        Args:
+            filename: Path to the input map file.
+        """
         self.filename = filename
         self.parser = Parser()
         self.graph = Graph(filename)
@@ -22,6 +27,7 @@ class DroneSimulation:
         self.drone_nbr = 0
 
     def load_parser(self) -> None:
+        """Parses and validates drones, hubs, and connections from input."""
         self.parser.open(self.filename)
         res = self.parser.process()
         self.hubs = [
@@ -52,9 +58,11 @@ class DroneSimulation:
         )
 
     def load_graph(self) -> None:
+        """Builds the in-memory graph from parsed hubs and connections."""
         self.graph.convert_to_graph(self.hubs, self.connections)
 
     def run(self) -> None:
+        """Runs parsing, solving, logging, and visualization for the map."""
         try:
             self.load_parser()
             self.load_graph()
