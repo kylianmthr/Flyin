@@ -1,3 +1,4 @@
+from typing import Any
 import pygame
 from graph import Link, Node
 from rich.console import Console
@@ -178,6 +179,13 @@ class Visualizer:
         )
         self.capacities = {node.id: 0 for node in nodes}
         self.capacities[nodes[0].id] = len(paths)
+        self.raw_rainbow_image = pygame.image.load(
+            "rainbow_circle.png"
+        ).convert_alpha()
+        diameter = self.radius * 2
+        self.rainbow_image = pygame.transform.scale(
+            self.raw_rainbow_image, (diameter, diameter)
+        )
 
     def _zoom(self) -> None:
         """Recomputes drawing dimensions after zoom changes."""
@@ -188,6 +196,10 @@ class Visualizer:
         self.step_offset = self.radius + self.offset
         self.offset_x = 400 - self.node_width * self.step_offset
         self.offset_y = 300 - self.node_height * self.step_offset
+        diameter = self.radius * 2
+        self.rainbow_image = pygame.transform.scale(
+            self.raw_rainbow_image, (diameter, diameter)
+        )
 
     def _get_node_coords(self, node: Node) -> tuple[int, int]:
         """Converts a node position to screen coordinates.
@@ -219,20 +231,17 @@ class Visualizer:
                 width=self.multiply,
             )
             for node in self.nodes:
+                coords = self._get_node_coords(node)
                 try:
                     pygame.draw.circle(
                         self.screen,
                         node.color if node.color else "white",
-                        self._get_node_coords(node),
+                        coords,
                         self.radius,
                     )
                 except Exception:
-                    pygame.draw.circle(
-                        self.screen,
-                        "white",
-                        self._get_node_coords(node),
-                        self.radius,
-                    )
+                    img_rect = self.rainbow_image.get_rect(center=coords)
+                    self.screen.blit(self.rainbow_image, img_rect)
 
         pygame.display.flip()
 
@@ -300,6 +309,19 @@ class Visualizer:
         self._draw_drones()
         self._show_step()
 
+    def _point_to_line_dist(
+        self, px: float, py: float, x1: float, y1: float, x2: float, y2: float
+    ) -> Any:
+        dx = x2 - x1
+        dy = y2 - y1
+        length_squared = dx**2 + dy**2
+        if length_squared == 0:
+            return ((px - x1) ** 2 + (py - y1) ** 2) ** 0.5
+        t = max(0, min(1, ((px - x1) * dx + (py - y1) * dy) / length_squared))
+        closest_x = x1 + t * dx
+        closest_y = y1 + t * dy
+        return ((px - closest_x) ** 2 + (py - closest_y) ** 2) ** 0.5
+
     def _handle_events(self) -> None:
         """Handles input events for zoom, pan, selection, and stepping."""
         for event in pygame.event.get():
@@ -322,19 +344,41 @@ class Visualizer:
                 if event.button == 1:
                     self.old_x = event.pos[0]
                     self.old_y = event.pos[1]
+                    click_handled = False
                     for node in self.nodes:
                         x, y = self._get_node_coords(node)
                         if (event.pos[0] - x) ** 2 + (
                             event.pos[1] - y
                         ) ** 2 <= self.radius**2:
                             self.is_visible = True
-                            self.info_card.title = node.id
+                            self.info_card.title = str(node.id)
                             self.info_card.description = node.zone.name
                             self.info_card.description += (
                                 " \n"
                                 f"{self.capacities[node.id]}/{node.capacity}"
                             )
+                            click_handled = True
                             break
+                    if not click_handled:
+                        click_tolerance = max(5, self.multiply * 2)
+                        for link in self.connections:
+                            x1, y1 = self._get_node_coords(link.nodes[0])
+                            x2, y2 = self._get_node_coords(link.nodes[1])
+                            dist = self._point_to_line_dist(
+                                event.pos[0], event.pos[1], x1, y1, x2, y2
+                            )
+                            if dist <= click_tolerance:
+                                self.is_visible = True
+                                self.info_card.title = (
+                                    f"{link.nodes[0].id} ↔ {link.nodes[1].id}"
+                                )
+                                cap = getattr(link, "capacity", "N/A")
+                                self.info_card.description = (
+                                    f"Capacité max : {cap}"
+                                )
+                                click_handled = True
+                                break
+                    if not click_handled:
                         self.is_visible = False
                     self._show_all()
             if event.type == pygame.KEYDOWN:
