@@ -47,7 +47,7 @@ class Card:
 
     def _draw_text_wrapped(
         self,
-        surface: pygame.Surface,
+        surface: pygame.surface.Surface,
         text: str,
         font: pygame.font.Font,
         color: tuple[int, int, int],
@@ -80,7 +80,7 @@ class Card:
             surface.blit(text_surface, (rect.x, y_offset))
             y_offset += font.get_linesize() + 4
 
-    def draw(self, surface: pygame.Surface) -> None:
+    def draw(self, surface: pygame.surface.Surface) -> None:
         """Renders the full card with title and wrapped description.
 
         Args:
@@ -312,6 +312,26 @@ class Visualizer:
     def _point_to_line_dist(
         self, px: float, py: float, x1: float, y1: float, x2: float, y2: float
     ) -> Any:
+        """
+        Calculate the shortest distance from a point (px, py) to a line
+        segment defined by (x1, y1) and (x2, y2).
+
+        If the segment is a single point, returns the Euclidean distance from
+        the point to (x1, y1).
+        Otherwise, projects the point onto the segment and returns the distance
+        to the closest point on the segment.
+
+        Args:
+            px (float): X coordinate of the point.
+            py (float): Y coordinate of the point.
+            x1 (float): X coordinate of the segment start.
+            y1 (float): Y coordinate of the segment start.
+            x2 (float): X coordinate of the segment end.
+            y2 (float): Y coordinate of the segment end.
+
+        Returns:
+            float: The shortest distance from the point to the line segment.
+        """
         dx = x2 - x1
         dy = y2 - y1
         length_squared = dx**2 + dy**2
@@ -374,7 +394,7 @@ class Visualizer:
                                 )
                                 cap = getattr(link, "capacity", "N/A")
                                 self.info_card.description = (
-                                    f"Capacité max : {cap}"
+                                    f"Max capacity: {cap}"
                                 )
                                 click_handled = True
                                 break

@@ -75,7 +75,6 @@ class DroneSimulation:
                 goal=self.graph.nodes[-1],
             )
             drone_actions.process()
-            print(drone_actions.paths)
             visualizer = Visualizer(
                 self.graph.nodes,
                 self.graph.links,
