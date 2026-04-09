@@ -190,12 +190,12 @@ class Solver:
         count = itertools.count()
         queue = [(start_turn, next(count), start_node)]
         heapq.heapify(queue)
-        visited = []
+        visited = set()
         while queue:
             current_turn, _, current_node = heapq.heappop(queue)
             if (current_node, current_turn) in visited:
                 continue
-            visited.append((current_node, current_turn))
+            visited.add((current_node, current_turn))
             if current_node == end_node:
                 break
             next_turn = current_turn + 1

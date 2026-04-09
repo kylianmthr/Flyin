@@ -74,6 +74,23 @@ class DroneSimulation:
                 raise ValueError(
                     "Error: All hubs must have at least one connection"
                 )
+        for node in self.graph.nodes:
+            if node.end and node.start:
+                raise ValueError(
+                    "Error: A hub cannot be both a start and an end hub"
+                )
+            if node.start or node.end:
+                if len(node._link) < 1:
+                    raise ValueError(
+                        "Error: Start and end hubs must have at least one"
+                        " connection"
+                    )
+            else:
+                if len(node._link) < 2:
+                    raise ValueError(
+                        "Error: Non-start/end hubs must have at least two"
+                        " connections"
+                    )
 
     def run(self) -> None:
         """Runs parsing, solving, logging, and visualization for the map."""
