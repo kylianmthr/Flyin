@@ -183,6 +183,7 @@ class Solver:
         Returns:
             Distances indexed by (node, turn) states.
         """
+        max_turn = 100
         distances: dict[tuple[Node, int], float] = defaultdict(
             lambda: float("inf")
         )
@@ -193,6 +194,8 @@ class Solver:
         visited = set()
         while queue:
             current_turn, _, current_node = heapq.heappop(queue)
+            if current_turn == max_turn:
+                raise ValueError("Can't reach the end")
             if (current_node, current_turn) in visited:
                 continue
             visited.add((current_node, current_turn))
