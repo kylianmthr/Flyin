@@ -178,6 +178,7 @@ class Visualizer:
             description="",
         )
         self.capacities = {node.id: 0 for node in nodes}
+        self.link_capacities = {link: 0 for link in connections}
         self.capacities[nodes[0].id] = len(paths)
         self.raw_rainbow_image = pygame.image.load(
             "rainbow_circle.png"
@@ -249,6 +250,8 @@ class Visualizer:
         """Draws drone sprites and updates node occupancy counters."""
         for node in self.nodes:
             self.capacities[node.id] = 0
+        for link in self.connections:
+            self.link_capacities[link] = 0
         for path in self.paths:
             last_turn = max(path.keys())
             if self.step >= last_turn:
@@ -260,9 +263,16 @@ class Visualizer:
                 self.capacities[current_node.id] += 1
                 self._draw_drone(current_node)
             else:
-                # prev_node = path[self.step - 1]
-                # next_node = path[self.step + 1]
-                pass
+                prev_node = path[self.step - 1]
+                next_node = path[self.step + 1]
+                link = next(
+                    (
+                        link
+                        for link in self.connections
+                        if prev_node in link.nodes and next_node in link.nodes
+                    )
+                )
+                self.link_capacities[link] += 1
 
     def _print_logs(self) -> None:
         """Prints logs for the current displayed simulation turn."""
@@ -394,7 +404,7 @@ class Visualizer:
                                 )
                                 cap = getattr(link, "capacity", "N/A")
                                 self.info_card.description = (
-                                    f"Max capacity: {cap}"
+                                    f"{self.link_capacities[link]}/{cap}"
                                 )
                                 click_handled = True
                                 break
