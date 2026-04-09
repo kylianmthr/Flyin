@@ -47,7 +47,7 @@ class Parser:
         res = []
         parser = ParserManager()
         lines = self.content.split("\n")
-        file_line = 0
+        file_line = 1
         i = 0
         for line in lines:
             if not line.startswith("#") and len(line):
@@ -442,6 +442,8 @@ class ConnectionValidator(BaseModel):
         """
         if "-" not in self.connection:
             raise ValueError("Error: Connections must include separator")
+        if self.connection.split("-")[0] == self.connection.split("-")[1]:
+            raise ValueError("Error: connection can't link a hub to itself")
         if info.context:
             if self.connection not in info.context["connections"]:
                 inverted_connection = "-".join(

@@ -39,6 +39,15 @@ class DroneSimulation:
             )
             or isinstance(node["parsed_and_validated_data"], HubValidator)
         ]
+        specials_hub = [
+            node
+            for node in self.hubs
+            if isinstance(node, StartOrEndHubValidator)
+        ]
+        if len(specials_hub) != 2:
+            raise ValueError(
+                "Error: Map must contains exactly one start and one end hub"
+            )
         self.connections = [
             node["parsed_and_validated_data"]
             for node in res
@@ -60,6 +69,11 @@ class DroneSimulation:
     def load_graph(self) -> None:
         """Builds the in-memory graph from parsed hubs and connections."""
         self.graph.convert_to_graph(self.hubs, self.connections)
+        for node in self.graph.nodes:
+            if not len(node._link):
+                raise ValueError(
+                    "Error: All hubs must have at least one connection"
+                )
 
     def run(self) -> None:
         """Runs parsing, solving, logging, and visualization for the map."""
@@ -67,12 +81,14 @@ class DroneSimulation:
             self.load_parser()
             self.load_graph()
             drone_paths = self.solver.generate_drones_path(
-                self.drone_nbr, self.graph.nodes, self.graph.nodes[-1]
+                self.drone_nbr,
+                self.graph.nodes,
+                [node for node in self.graph.nodes if node.end][0],
             )
             drone_actions = DroneActions(
                 self.drone_nbr,
                 drone_paths,
-                goal=self.graph.nodes[-1],
+                goal=[node for node in self.graph.nodes if node.end][0],
             )
             drone_actions.process()
             visualizer = Visualizer(
